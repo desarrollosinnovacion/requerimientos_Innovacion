@@ -71,8 +71,8 @@ export function PanelInnovacion({ id, estado, prioridadFinal, fechaEstimada, not
           <label htmlFor="notas_innovacion" className="label">Notas internas / respuesta</label>
           <textarea id="notas_innovacion" name="notas_innovacion" rows={4} defaultValue={notas ?? ""} className="input mt-1" />
         </div>
-        {res.error && <p role="alert" className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{res.error}</p>}
-        {res.ok && !pendiente && <p role="status" className="rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-800">Cambios guardados.</p>}
+        {res.error && <p role="alert" className="rounded-md bg-cobre-50 px-3 py-2 text-sm text-cobre-700">{res.error}</p>}
+        {res.ok && !pendiente && <p role="status" className="rounded-md bg-brand-50 px-3 py-2 text-sm text-brand-800">Cambios guardados.</p>}
         <button type="submit" disabled={pendiente} className="btn-primary w-full">
           {pendiente ? "Guardando…" : "Guardar cambios"}
         </button>

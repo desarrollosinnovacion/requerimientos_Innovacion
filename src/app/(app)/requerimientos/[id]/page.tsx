@@ -1,15 +1,18 @@
 import Link from "next/link";
+import { ArrowLeft, Pencil } from "lucide-react";
 import { notFound } from "next/navigation";
 import { requerirUsuario } from "@/lib/auth";
 import { SECCIONES, cumpleCondicion, type Campo } from "@/lib/formulario";
-import { formatearFecha } from "@/lib/formato";
+import { formatearFecha, tituloProyecto } from "@/lib/formato";
 import type { MiembroEquipo, Requerimiento } from "@/lib/tipos";
 import { BadgeEstado, BadgePrioridad } from "@/components/badges";
 import { PanelInnovacion } from "./panel-innovacion";
+import { BotonEliminar } from "./boton-eliminar";
+import { puedeEditarRequerimiento } from "@/lib/permisos";
 
 export default async function DetalleRequerimiento(props: PageProps<"/requerimientos/[id]">) {
   const { id } = await props.params;
-  const { creado } = await props.searchParams;
+  const { creado, editado } = await props.searchParams;
   const { supabase, perfil } = await requerirUsuario();
 
   const { data: req } = await supabase.from("requerimientos").select("*").eq("id", id).maybeSingle<Requerimiento>();
@@ -17,6 +20,7 @@ export default async function DetalleRequerimiento(props: PageProps<"/requerimie
   if (!req) notFound();
 
   const esInnovacion = perfil.rol === "innovacion";
+  const puedeEditar = puedeEditarRequerimiento(perfil, req);
 
   const [{ data: asignadosData }, { data: equipoData }] = await Promise.all([
     supabase
@@ -34,31 +38,52 @@ export default async function DetalleRequerimiento(props: PageProps<"/requerimie
 
   return (
     <div className="space-y-6">
+      {editado === "1" && (
+        <p role="status" className="rounded-md bg-brand-50 px-4 py-3 text-sm text-brand-800">
+          Los cambios se guardaron correctamente.
+        </p>
+      )}
       {creado === "1" && (
-        <p role="status" className="rounded-md bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+        <p role="status" className="rounded-md bg-brand-50 px-4 py-3 text-sm text-brand-800">
           Tu requerimiento fue enviado con el folio <strong>{req.folio}</strong>. El Departamento de
           Innovación lo evaluará y te dará seguimiento.
         </p>
       )}
 
-      <div>
-        <Link href="/requerimientos" className="text-sm text-slate-500 hover:text-slate-800">
-          ← Volver a la lista
-        </Link>
-        <div className="mt-2 flex flex-wrap items-center gap-3">
-          <h1 className="font-mono text-2xl font-semibold text-slate-900">{req.folio}</h1>
-          <BadgeEstado estado={req.estado} />
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <Link href="/requerimientos" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900">
+            <ArrowLeft aria-hidden className="h-4 w-4" strokeWidth={1.5} /> Volver a la lista
+          </Link>
+          <div className="mt-2 flex flex-wrap items-center gap-3">
+            <h1 className="text-2xl font-medium text-slate-900">{tituloProyecto(req)}</h1>
+            <BadgeEstado estado={req.estado} />
+          </div>
+          <p className="mt-1 text-slate-700">
+            <span className="font-mono text-sm text-brand-600">{req.folio}</span>
+            {req.nombre_proyecto && req.tipo_requerimiento && <span className="text-slate-500"> · {req.tipo_requerimiento}</span>}
+          </p>
+          <p className="mt-1 text-sm text-slate-500">
+            Enviado por {req.nombre_solicitante ?? "Sin nombre"}{req.empresa_area ? ` (${req.empresa_area})` : ""} el {formatearFecha(req.creado_en, true)}
+            {req.solicitante_id === null && " · desde el enlace público"}
+          </p>
         </div>
-        <p className="mt-1 text-slate-700">{req.tipo_requerimiento}</p>
-        <p className="mt-1 text-sm text-slate-500">
-          Enviado por {req.nombre_solicitante} ({req.empresa_area}) el {formatearFecha(req.creado_en, true)}
-        </p>
+        <div className="flex flex-wrap items-start justify-end gap-2">
+          {puedeEditar && (
+            <Link href={`/requerimientos/${req.id}/editar`} className="btn-secondary">
+              <Pencil aria-hidden className="h-4 w-4" strokeWidth={1.5} />
+              Editar
+            </Link>
+          )}
+          {esInnovacion && <BotonEliminar id={req.id} folio={req.folio} />}
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
         <div className="space-y-6">
           {SECCIONES.map((seccion) => {
-            const campos = seccion.campos.filter((c) => cumpleCondicion(c, req) && tieneValor(req[c.nombre]));
+            // El nombre del proyecto ya es el título de la página; no se repite en la sección.
+            const campos = seccion.campos.filter((c) => c.nombre !== "nombre_proyecto" && cumpleCondicion(c, req) && tieneValor(req[c.nombre]));
             if (campos.length === 0) return null;
             return (
               <section key={seccion.id} className="card p-6">
@@ -150,7 +175,7 @@ function renderValor(campo: Campo, req: Requerimiento) {
     return (
       <ul className="flex flex-wrap gap-1.5">
         {v.map((op) => (
-          <li key={op} className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs text-slate-800">
+          <li key={op} className=" bg-slate-100 px-2.5 py-0.5 text-xs text-slate-800">
             {op === "Otro" && otro ? `Otro: ${otro}` : op}
           </li>
         ))}

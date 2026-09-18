@@ -21,7 +21,7 @@ export function FormNuevo({ nivel, padreId, placeholder }: { nivel: Nivel; padre
           Agregar
         </button>
       </div>
-      {res.error && <p role="alert" className="text-xs text-red-600">{res.error}</p>}
+      {res.error && <p role="alert" className="text-xs text-cobre-600">{res.error}</p>}
     </form>
   );
 }

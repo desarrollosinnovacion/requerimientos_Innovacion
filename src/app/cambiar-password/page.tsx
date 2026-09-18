@@ -16,7 +16,7 @@ export default async function CambiarPasswordPage() {
       }
     >
       <CambiarPasswordForm />
-      <form action={cerrarSesion} className="mt-6 text-center">
+      <form action={cerrarSesion} className="mt-6">
         <button type="submit" className="text-xs text-slate-500 hover:text-slate-800 hover:underline">
           Cerrar sesión ({perfil.correo})
         </button>

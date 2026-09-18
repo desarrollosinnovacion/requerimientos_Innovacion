@@ -7,21 +7,28 @@ import {
   NOTA_FINAL,
   cumpleCondicion,
   type Campo,
+  type ResultadoEnvio,
   type ValoresFormulario,
 } from "@/lib/formulario";
 import type { Empresa } from "@/lib/catalogos";
-import { crearRequerimiento } from "./actions";
 import { SelectorEmpresaArea } from "./selector-empresa-area";
 
 type Props = {
-  valoresIniciales: Record<string, string>;
+  /** Valores con los que arranca el formulario (vacío al crear, el registro al editar). */
+  valoresIniciales: ValoresFormulario;
   empresas: Empresa[];
+  /** Texto del botón de envío. */
+  textoEnviar?: string;
+  /** Server Action que valida y guarda; decide a dónde navegar al terminar. */
+  enviar: (fd: FormData) => Promise<ResultadoEnvio>;
+  /** Enlace público (sin sesión): agrega un campo trampa para bots. */
+  publico?: boolean;
 };
 
-export function FormularioRequerimiento({ valoresIniciales, empresas }: Props) {
+export function FormularioRequerimiento({ valoresIniciales, empresas, enviar, publico, textoEnviar = "Enviar requerimiento" }: Props) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
-  const [valores, setValores] = useState<ValoresFormulario>({});
+  const [valores, setValores] = useState<ValoresFormulario>(valoresIniciales);
   const [errores, setErrores] = useState<Record<string, string>>({});
   const [mensaje, setMensaje] = useState<string | null>(null);
   const [progreso, setProgreso] = useState<string | null>(null);
@@ -47,7 +54,7 @@ export function FormularioRequerimiento({ valoresIniciales, empresas }: Props) {
     setMensaje(null);
     iniciarTransicion(async () => {
       setProgreso("Guardando requerimiento…");
-      const res = await crearRequerimiento(fd);
+      const res = await enviar(fd);
       if (!res.ok) {
         setErrores(res.errores);
         setMensaje(res.mensaje ?? null);
@@ -58,12 +65,18 @@ export function FormularioRequerimiento({ valoresIniciales, empresas }: Props) {
         }
         return;
       }
-      router.push(`/requerimientos/${res.id}?creado=1`);
+      router.push(res.destino);
     });
   }
 
   return (
     <form ref={formRef} onSubmit={alEnviar} onChange={alCambiar} noValidate className="space-y-6">
+      {publico && (
+        <div className="hidden" aria-hidden>
+          <label htmlFor="sitio_web">Sitio web</label>
+          <input id="sitio_web" type="text" name="sitio_web" tabIndex={-1} autoComplete="off" />
+        </div>
+      )}
       {SECCIONES.map((seccion) => (
         <section key={seccion.id} className="card p-6" aria-labelledby={`sec-${seccion.id}`}>
           <h2 id={`sec-${seccion.id}`} className="text-lg font-semibold text-slate-900">
@@ -77,7 +90,9 @@ export function FormularioRequerimiento({ valoresIniciales, empresas }: Props) {
                   campo={campo}
                   error={errores[campo.nombre] || (("otro" in campo && campo.otro && errores[campo.otro]) || "")}
                   valores={valores}
-                  valorInicial={valoresIniciales[campo.nombre]}
+                  valorInicial={valoresIniciales[campo.nombre] ?? null}
+                  valorInicialOtro={"otro" in campo && campo.otro ? valoresIniciales[campo.otro] ?? null : null}
+                  iniciales={valoresIniciales}
                   empresas={empresas}
                 />
               ) : null,
@@ -91,13 +106,13 @@ export function FormularioRequerimiento({ valoresIniciales, empresas }: Props) {
       </p>
 
       {mensaje && (
-        <p role="alert" className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{mensaje}</p>
+        <p role="alert" className="rounded-md bg-cobre-50 px-3 py-2 text-sm text-cobre-700">{mensaje}</p>
       )}
 
       <div className="flex items-center justify-end gap-3">
         {progreso && <span className="text-sm text-slate-500">{progreso}</span>}
         <button type="submit" disabled={pendiente} className="btn-primary">
-          {pendiente ? "Enviando…" : "Enviar requerimiento"}
+          {pendiente ? "Guardando…" : textoEnviar}
         </button>
       </div>
     </form>
@@ -109,12 +124,16 @@ function CampoFormulario({
   error,
   valores,
   valorInicial,
+  valorInicialOtro,
+  iniciales,
   empresas,
 }: {
   campo: Campo;
   error?: string;
   valores: ValoresFormulario;
-  valorInicial?: string;
+  valorInicial: string | string[] | null;
+  valorInicialOtro: string | string[] | null;
+  iniciales: ValoresFormulario;
   empresas: Empresa[];
 }) {
   const id = `campo-${campo.nombre}`;
@@ -123,7 +142,7 @@ function CampoFormulario({
   const etiqueta = (
     <>
       {campo.etiqueta}
-      {campo.requerido && <span className="ml-1 text-red-600" aria-hidden>*</span>}
+      {campo.requerido && <span className="ml-1 text-cobre-600" aria-hidden>*</span>}
     </>
   );
 
@@ -131,7 +150,18 @@ function CampoFormulario({
 
   if (campo.tipo === "empresa_area") {
     // Tres campos independientes (empresa, departamento, área) en cascada; sin título combinado.
-    control = <SelectorEmpresaArea empresas={empresas} error={error} errorId={error ? errorId : undefined} />;
+    control = (
+      <SelectorEmpresaArea
+        empresas={empresas}
+        error={error}
+        errorId={error ? errorId : undefined}
+        inicial={{
+          empresa_id: texto(iniciales.empresa_id),
+          departamento_id: texto(iniciales.departamento_id),
+          area_id: texto(iniciales.area_id),
+        }}
+      />
+    );
   } else if (campo.tipo === "radio" || campo.tipo === "checkbox") {
     const seleccion = valores[campo.nombre];
     const otroActivo = Array.isArray(seleccion) ? seleccion.includes("Otro") : seleccion === "Otro";
@@ -142,6 +172,7 @@ function CampoFormulario({
         <div className="mt-2 grid gap-2 sm:grid-cols-2">
           {campo.opciones.map((op) => {
             const opId = `${id}-${op.replace(/\W+/g, "-")}`;
+            const marcado = Array.isArray(valorInicial) ? valorInicial.includes(op) : valorInicial === op;
             return (
               <label key={op} htmlFor={opId} className="flex cursor-pointer items-start gap-2 rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-800 hover:bg-slate-50 has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50">
                 <input
@@ -149,6 +180,7 @@ function CampoFormulario({
                   type={campo.tipo}
                   name={campo.nombre}
                   value={op}
+                  defaultChecked={marcado}
                   className="mt-0.5 h-4 w-4 accent-brand-600"
                 />
                 <span>{op}</span>
@@ -160,10 +192,11 @@ function CampoFormulario({
           <input
             type="text"
             name={campo.otro}
+            defaultValue={texto(valorInicialOtro)}
             placeholder="Especifica…"
             aria-label={`${campo.etiqueta}: especifica otro`}
             className="input mt-2"
-            autoFocus
+            autoFocus={!texto(valorInicialOtro)}
           />
         )}
       </fieldset>
@@ -172,12 +205,12 @@ function CampoFormulario({
     const comun = {
       id,
       name: campo.nombre,
-      defaultValue: valorInicial,
+      defaultValue: texto(valorInicial),
       placeholder: campo.placeholder,
       "aria-required": campo.requerido || undefined,
       "aria-invalid": error ? true : undefined,
       "aria-describedby": error ? errorId : undefined,
-      className: `input mt-1 ${error ? "border-red-400" : ""}`,
+      className: `input mt-1 ${error ? "border-cobre-400" : ""}`,
     };
     control = (
       <>
@@ -196,8 +229,13 @@ function CampoFormulario({
     <div data-campo={campo.nombre}>
       {control}
       {error && (
-        <p id={errorId} role="alert" className="mt-1 text-sm text-red-600">{error}</p>
+        <p id={errorId} role="alert" className="mt-1 text-sm text-cobre-600">{error}</p>
       )}
     </div>
   );
+}
+
+/** Un valor inicial como texto para inputs (los arreglos son de checkboxes y no aplican aquí). */
+function texto(v: string | string[] | null | undefined) {
+  return typeof v === "string" ? v : "";
 }

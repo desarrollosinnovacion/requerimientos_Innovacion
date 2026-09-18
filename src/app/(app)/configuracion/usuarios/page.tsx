@@ -21,7 +21,7 @@ export default async function UsuariosPage() {
     <div className="space-y-6">
       <Migas items={[{ href: "/configuracion", etiqueta: "Configuración" }, { etiqueta: "Usuarios" }]} />
       <div>
-        <h1 className="text-2xl font-semibold text-slate-900">Usuarios</h1>
+        <h1 className="text-2xl font-medium text-slate-900">Usuarios</h1>
         <p className="mt-1 text-sm text-slate-600">
           Las cuentas las crea el equipo de Innovación; no existe registro público. El sistema genera una
           contraseña temporal que el usuario debe cambiar al entrar por primera vez.
@@ -29,7 +29,7 @@ export default async function UsuariosPage() {
       </div>
 
       {faltaClave && (
-        <p role="alert" className="rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <p role="alert" className="rounded-md bg-cobre-50 px-4 py-3 text-sm text-cobre-800">
           Falta la variable <code className="font-mono">SUPABASE_SERVICE_ROLE_KEY</code> en el servidor. Sin ella no
           se pueden crear ni administrar usuarios. Cópiala de Supabase → Project Settings → API → service_role.
         </p>
@@ -41,7 +41,7 @@ export default async function UsuariosPage() {
       </section>
 
       {error && (
-        <p role="alert" className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p role="alert" className="rounded-md bg-cobre-50 px-3 py-2 text-sm text-cobre-700">
           No fue posible cargar los usuarios: {error.message}
         </p>
       )}
@@ -70,7 +70,7 @@ export default async function UsuariosPage() {
             ))}
             {usuarios.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-slate-500">No hay usuarios.</td>
+                <td colSpan={6} className="px-4 py-8 text-slate-500">No hay usuarios.</td>
               </tr>
             )}
           </tbody>

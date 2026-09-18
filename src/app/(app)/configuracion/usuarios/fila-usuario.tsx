@@ -29,7 +29,7 @@ export function FilaUsuario({ usuario, esYo, creado, deshabilitado }: Props) {
       <tr className={`hover:bg-slate-50 ${usuario.activo ? "" : "opacity-60"}`}>
         <td className="px-4 py-3 font-medium text-slate-900">
           {usuario.nombre}
-          {esYo && <span className="ml-2 rounded-full bg-brand-50 px-2 py-0.5 text-xs text-brand-700">Tú</span>}
+          {esYo && <span className="ml-2 bg-brand-50 px-2 py-0.5 text-xs text-brand-700">Tú</span>}
         </td>
         <td className="px-4 py-3 text-slate-700">{usuario.correo}</td>
         <td className="px-4 py-3">
@@ -49,11 +49,11 @@ export function FilaUsuario({ usuario, esYo, creado, deshabilitado }: Props) {
           </form>
         </td>
         <td className="px-4 py-3">
-          <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${usuario.activo ? "bg-emerald-100 text-emerald-800" : "bg-slate-200 text-slate-700"}`}>
+          <span className={`inline-flex px-2.5 py-0.5 text-xs font-medium ${usuario.activo ? "bg-brand-100 text-brand-800" : "bg-slate-200 text-slate-700"}`}>
             {usuario.activo ? "Activo" : "Inactivo"}
           </span>
           {usuario.debe_cambiar_password && (
-            <span className="ml-1 inline-flex rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800" title="Debe cambiar la contraseña temporal al entrar">
+            <span className="ml-1 inline-flex bg-cobre-100 px-2.5 py-0.5 text-xs font-medium text-cobre-800" title="Debe cambiar la contraseña temporal al entrar">
               Contraseña temporal
             </span>
           )}
@@ -65,10 +65,10 @@ export function FilaUsuario({ usuario, esYo, creado, deshabilitado }: Props) {
           </button>
           {!esYo && (
             <>
-              <button type="button" disabled={deshabilitado} onClick={() => toggle("activo")} className={`${btn} ${usuario.activo ? "text-amber-700 hover:bg-amber-50" : "text-emerald-700 hover:bg-emerald-50"}`}>
+              <button type="button" disabled={deshabilitado} onClick={() => toggle("activo")} className={`${btn} ${usuario.activo ? "text-cobre-700 hover:bg-cobre-50" : "text-brand-700 hover:bg-brand-50"}`}>
                 {usuario.activo ? "Desactivar" : "Activar"}
               </button>
-              <button type="button" disabled={deshabilitado} onClick={() => toggle("eliminar")} className={`${btn} text-red-600 hover:bg-red-50`}>
+              <button type="button" disabled={deshabilitado} onClick={() => toggle("eliminar")} className={`${btn} text-cobre-600 hover:bg-cobre-50`}>
                 Eliminar
               </button>
             </>
@@ -102,7 +102,7 @@ export function FilaUsuario({ usuario, esYo, creado, deshabilitado }: Props) {
                     ? `¿Desactivar a ${usuario.nombre}? No podrá iniciar sesión y se cerrará su sesión actual. Sus requerimientos se conservan.`
                     : `¿Activar de nuevo a ${usuario.nombre}? Podrá iniciar sesión con su contraseña.`}
                 </span>
-                <button type="submit" disabled={pendActivo} className={usuario.activo ? "rounded-md bg-amber-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-700" : "btn-primary px-3 py-1.5"}>
+                <button type="submit" disabled={pendActivo} className={usuario.activo ? "rounded-md bg-cobre-600 px-3 py-1.5 text-sm font-medium text-slate-100 hover:bg-cobre-700" : "btn-primary px-3 py-1.5"}>
                   {usuario.activo ? "Sí, desactivar" : "Sí, activar"}
                 </button>
                 <button type="button" onClick={() => setPanel(null)} className="btn-secondary px-3 py-1.5">Cancelar</button>
@@ -111,8 +111,8 @@ export function FilaUsuario({ usuario, esYo, creado, deshabilitado }: Props) {
             {panel === "eliminar" && (
               <form action={accionDel} className="flex flex-wrap items-center gap-3">
                 <input type="hidden" name="id" value={usuario.id} />
-                <span className="text-sm text-red-800">¿Eliminar la cuenta de {usuario.nombre} ({usuario.correo})? Esta acción no se puede deshacer.</span>
-                <button type="submit" disabled={pendDel} className="rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700">
+                <span className="text-sm text-cobre-800">¿Eliminar la cuenta de {usuario.nombre} ({usuario.correo})? Esta acción no se puede deshacer.</span>
+                <button type="submit" disabled={pendDel} className="rounded-md bg-cobre-600 px-3 py-1.5 text-sm font-medium text-slate-100 hover:bg-cobre-700">
                   Sí, eliminar
                 </button>
                 <button type="button" onClick={() => setPanel(null)} className="btn-secondary px-3 py-1.5">Cancelar</button>
@@ -122,7 +122,7 @@ export function FilaUsuario({ usuario, esYo, creado, deshabilitado }: Props) {
               <div className="mt-2"><PasswordGenerada correo={resReini.correo} password={resReini.password} /></div>
             )}
             {ultimo && !(ultimo === resReini && resReini.password) && (
-              <p role={ultimo.error ? "alert" : "status"} className={`mt-2 text-sm ${ultimo.error ? "text-red-700" : "text-emerald-800"}`}>
+              <p role={ultimo.error ? "alert" : "status"} className={`mt-2 text-sm ${ultimo.error ? "text-cobre-700" : "text-brand-800"}`}>
                 {ultimo.error ?? ultimo.mensaje}
               </p>
             )}

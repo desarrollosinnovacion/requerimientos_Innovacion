@@ -42,7 +42,7 @@ export function ElementoCatalogo({ nivel, id, nombre, activo, seleccionado, href
           <button type="submit" disabled={pendRenombrar} className="btn-primary px-2 py-1 text-xs">Guardar</button>
           <button type="button" onClick={() => setEditando(false)} className="btn-secondary px-2 py-1 text-xs">Cancelar</button>
         </form>
-        {resRenombrar.error && <p role="alert" className="text-xs text-red-600">{resRenombrar.error}</p>}
+        {resRenombrar.error && <p role="alert" className="text-xs text-cobre-600">{resRenombrar.error}</p>}
       </li>
     );
   }
@@ -75,23 +75,23 @@ export function ElementoCatalogo({ nivel, id, nombre, activo, seleccionado, href
               {activo ? "Desactivar" : "Activar"}
             </button>
           </form>
-          <button type="button" onClick={() => setConfirmando((v) => !v)} className="rounded px-2 py-1 text-red-600 hover:bg-red-50" title="Eliminar">
+          <button type="button" onClick={() => setConfirmando((v) => !v)} className="rounded px-2 py-1 text-cobre-600 hover:bg-cobre-50" title="Eliminar">
             Eliminar
           </button>
         </div>
       </div>
       {confirmando && (
-        <form action={accionEliminar} className="flex flex-wrap items-center gap-2 rounded bg-red-50 px-2 py-1.5">
+        <form action={accionEliminar} className="flex flex-wrap items-center gap-2 rounded bg-cobre-50 px-2 py-1.5">
           <input type="hidden" name="nivel" value={nivel} />
           <input type="hidden" name="id" value={id} />
-          <span className="text-xs text-red-800">¿Eliminar &quot;{nombre}&quot;{conteoHijos ? " y todo su contenido" : ""}?</span>
-          <button type="submit" disabled={pendEliminar} className="rounded bg-red-600 px-2 py-1 text-xs font-medium text-white hover:bg-red-700">
+          <span className="text-xs text-cobre-800">¿Eliminar &quot;{nombre}&quot;{conteoHijos ? " y todo su contenido" : ""}?</span>
+          <button type="submit" disabled={pendEliminar} className="rounded bg-cobre-600 px-2 py-1 text-xs font-medium text-slate-100 hover:bg-cobre-700">
             Sí, eliminar
           </button>
           <button type="button" onClick={() => setConfirmando(false)} className="text-xs text-slate-600 underline">No</button>
         </form>
       )}
-      {resEliminar.error && <p role="alert" className="text-xs text-red-600">{resEliminar.error}</p>}
+      {resEliminar.error && <p role="alert" className="text-xs text-cobre-600">{resEliminar.error}</p>}
     </li>
   );
 }

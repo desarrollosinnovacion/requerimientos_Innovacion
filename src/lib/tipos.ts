@@ -13,16 +13,18 @@ export type RequerimientoResumen = {
   id: string;
   folio: string;
   estado: Estado;
-  tipo_requerimiento: string;
-  prioridad_sugerida: string;
+  nombre_proyecto: string | null;
+  tipo_requerimiento: string | null;
+  prioridad_sugerida: string | null;
   prioridad_final: string | null;
-  nombre_solicitante: string;
-  empresa_area: string;
+  nombre_solicitante: string | null;
+  empresa_area: string | null;
   creado_en: string;
 };
 
 export type Requerimiento = RequerimientoResumen & {
-  solicitante_id: string;
+  /** null cuando llegó por el enlace público (/solicitud). */
+  solicitante_id: string | null;
   empresa_id: string | null;
   departamento_id: string | null;
   area_id: string | null;

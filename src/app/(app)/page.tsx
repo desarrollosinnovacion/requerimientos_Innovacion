@@ -1,19 +1,25 @@
 import Link from "next/link";
 import { requerirUsuario } from "@/lib/auth";
 import { ESTADOS, PRIORIDADES, type Estado } from "@/lib/formulario";
-import { formatearFecha } from "@/lib/formato";
+import { formatearFecha, tituloProyecto } from "@/lib/formato";
 import type { MiembroEquipo } from "@/lib/tipos";
 import { BadgeEstado, BadgePrioridad } from "@/components/badges";
+import { BotonLinkPublico } from "@/components/boton-link-publico";
+import { Dona, type SegmentoDona } from "@/components/dona";
+import { COLOR_ESTADO as COLOR_BARRA, ORDEN_ESTADOS } from "@/lib/colores-estado";
 
 type Fila = {
   id: string;
   folio: string;
   estado: Estado;
-  tipo_requerimiento: string;
-  prioridad_sugerida: string;
+  nombre_proyecto: string | null;
+  tipo_requerimiento: string | null;
+  prioridad_sugerida: string | null;
   prioridad_final: string | null;
-  nombre_solicitante: string;
-  empresa_area: string;
+  nombre_solicitante: string | null;
+  empresa_area: string | null;
+  /** Unidad de negocio (catálogo `empresas`); null en registros antiguos sin empresa_id. */
+  empresa: { nombre: string } | null;
   fecha_limite: string | null;
   fecha_estimada_entrega: string | null;
   creado_en: string;
@@ -21,17 +27,17 @@ type Fila = {
   asignados: MiembroEquipo[];
 };
 
-type FilaCruda = Omit<Fila, "asignados"> & { asignados: { perfil: unknown }[] | null };
+type FilaCruda = Omit<Fila, "asignados" | "empresa"> & { asignados: { perfil: unknown }[] | null; empresa: unknown };
 
-/** Colores de estado para las barras (validados para daltonismo; el gris es intencional = sin empezar). */
-const COLOR_BARRA: Record<Estado, string> = {
-  no_iniciado: "#64748b",
-  iniciado: "#4f46e5",
-  en_pruebas: "#d97706",
-  finalizado: "#059669",
-};
 
-const ORDEN_ESTADOS: Estado[] = ["no_iniciado", "iniciado", "en_pruebas", "finalizado"];
+/** Orden fijo de colores categóricos (equipo y unidades de negocio): verde, piedra, verde profundo, verde claro, tinta. "Sin asignar" siempre en Cobre. */
+const COLOR_EQUIPO = ["#175641", "#c4c0b7", "#0B2B21", "#86b09d", "#3f3d39"];
+const COLOR_SIN_ASIGNAR = "#A7663A";
+const COLOR_OTROS = "#9c9891";
+const MAX_MIEMBROS_DONA = 5;
+/** Etiqueta para agrupar registros sin prioridad o sin unidad. */
+const SIN_DATO = "Sin definir";
+
 
 export default async function Inicio() {
   const { supabase, perfil } = await requerirUsuario();
@@ -41,7 +47,7 @@ export default async function Inicio() {
     supabase
       .from("requerimientos")
       .select(
-        "id, folio, estado, tipo_requerimiento, prioridad_sugerida, prioridad_final, nombre_solicitante, empresa_area, fecha_limite, fecha_estimada_entrega, creado_en, actualizado_en, asignados:requerimiento_asignados(perfil:perfiles(id, nombre))",
+        "id, folio, estado, nombre_proyecto, tipo_requerimiento, prioridad_sugerida, prioridad_final, nombre_solicitante, empresa_area, empresa:empresas(nombre), fecha_limite, fecha_estimada_entrega, creado_en, actualizado_en, asignados:requerimiento_asignados(perfil:perfiles(id, nombre))",
       )
       .order("creado_en", { ascending: false })
       .returns<FilaCruda[]>(),
@@ -52,6 +58,7 @@ export default async function Inicio() {
 
   const filas: Fila[] = (crudas ?? []).map((r) => ({
     ...r,
+    empresa: (r.empresa as { nombre: string } | null) ?? null,
     asignados: (r.asignados ?? [])
       .map((a) => a.perfil as MiembroEquipo | null)
       .filter((p): p is MiembroEquipo => p !== null),
@@ -61,8 +68,21 @@ export default async function Inicio() {
   const hoy = inicioDelDia(new Date());
   const activos = filas.filter((r) => r.estado !== "finalizado");
   const porEstado = contar(filas, (r) => r.estado);
-  const porPrioridad = contar(activos, (r) => r.prioridad_final ?? r.prioridad_sugerida);
-  const porArea = contar(activos, (r) => r.empresa_area);
+  const porPrioridad = contar(activos, (r) => r.prioridad_final ?? r.prioridad_sugerida ?? SIN_DATO);
+  const porArea = contar(activos, (r) => r.empresa_area ?? SIN_DATO);
+  // Unidad de negocio: nombre del catálogo o, si el registro no lo tiene, el primer tramo de "Empresa / Depto / Área".
+  const unidad = (r: Fila) => r.empresa?.nombre ?? r.empresa_area?.split(" / ")[0] ?? SIN_DATO;
+  const porUnidad = Object.entries(contar(filas, unidad))
+    .map(([nombre, total]) => ({ nombre, total }))
+    .sort((a, b) => b.total - a.total);
+  const unidadesPrincipales = porUnidad.slice(0, MAX_MIEMBROS_DONA);
+  const unidadesOtras = porUnidad.slice(MAX_MIEMBROS_DONA);
+  const donaUnidades: SegmentoDona[] = [
+    ...unidadesPrincipales.map((u, i) => ({ etiqueta: u.nombre, valor: u.total, color: COLOR_EQUIPO[i] })),
+    ...(unidadesOtras.length > 0
+      ? [{ etiqueta: `Otras (${unidadesOtras.length})`, valor: unidadesOtras.reduce((s, u) => s + u.total, 0), color: COLOR_OTROS }]
+      : []),
+  ];
   const sinAsignar = activos.filter((r) => r.asignados.length === 0);
   const conCompromiso = activos
     .map((r) => ({ fila: r, fecha: fechaCompromiso(r) }))
@@ -72,17 +92,29 @@ export default async function Inicio() {
   const atrasados = conCompromiso.filter((x) => x.dias < 0);
   const recientes = [...filas].sort((a, b) => b.actualizado_en.localeCompare(a.actualizado_en)).slice(0, 6);
 
-  const cargaEquipo = equipo.map((m) => ({
-    ...m,
-    total: activos.filter((r) => r.asignados.some((a) => a.id === m.id)).length,
-  }));
-  const maxCarga = Math.max(1, ...cargaEquipo.map((c) => c.total), sinAsignar.length);
+  const cargaEquipo = equipo
+    .map((m) => ({ ...m, total: activos.filter((r) => r.asignados.some((a) => a.id === m.id)).length }))
+    .sort((a, b) => b.total - a.total);
+  // Máximo 6 segmentos: los miembros con menos carga se agrupan en "Otros".
+  const principales = cargaEquipo.slice(0, MAX_MIEMBROS_DONA);
+  const otros = cargaEquipo.slice(MAX_MIEMBROS_DONA);
+  const donaEquipo: SegmentoDona[] = [
+    ...principales.map((m, i) => ({ etiqueta: m.nombre, valor: m.total, color: COLOR_EQUIPO[i] })),
+    ...(otros.length > 0 ? [{ etiqueta: `Otros (${otros.length})`, valor: otros.reduce((s, m) => s + m.total, 0), color: COLOR_OTROS }] : []),
+    { etiqueta: "Sin asignar", valor: sinAsignar.length, color: COLOR_SIN_ASIGNAR },
+  ];
+  const donaEstados: SegmentoDona[] = ORDEN_ESTADOS.map((e) => ({ etiqueta: ESTADOS[e], valor: porEstado[e] ?? 0, color: COLOR_BARRA[e] }));
+  const donaPrioridad: SegmentoDona[] = [
+    ...PRIORIDADES.map((p) => ({ etiqueta: p, valor: porPrioridad[p] ?? 0, color: COLOR_PRIORIDAD[p] })),
+    ...((porPrioridad[SIN_DATO] ?? 0) > 0 ? [{ etiqueta: SIN_DATO, valor: porPrioridad[SIN_DATO], color: COLOR_OTROS }] : []),
+  ];
+  const asignaciones = donaEquipo.reduce((s, x) => s + x.valor, 0);
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">
+          <h1 className="text-2xl font-medium text-slate-900">
             {esInnovacion ? "Panel de control" : `Hola, ${perfil.nombre.split(" ")[0]}`}
           </h1>
           <p className="mt-1 text-sm text-slate-600">
@@ -91,7 +123,10 @@ export default async function Inicio() {
               : "Seguimiento de los requerimientos que has enviado a Innovación."}
           </p>
         </div>
-        <Link href="/requerimientos/nuevo" className="btn-primary">+ Nuevo requerimiento</Link>
+        <div className="flex flex-wrap items-center gap-2">
+          {esInnovacion && <BotonLinkPublico />}
+          <Link href="/requerimientos/nuevo" className="btn-primary">+ Nuevo requerimiento</Link>
+        </div>
       </div>
 
       {/* Indicadores */}
@@ -109,61 +144,60 @@ export default async function Inicio() {
         />
       </section>
 
-      {/* Avance por estado */}
-      <section className="card p-5" aria-labelledby="avance">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 id="avance" className="text-base font-semibold text-slate-900">Avance por estado</h2>
-          <p className="text-sm text-slate-500">
-            {filas.length === 0 ? "Sin requerimientos" : `${porcentaje(porEstado.finalizado ?? 0, filas.length)} % finalizados`}
-          </p>
-        </div>
-        {filas.length > 0 && (
-          <>
-            <div className="mt-4 flex h-3 w-full gap-0.5 overflow-hidden rounded" role="img" aria-label={ORDEN_ESTADOS.map((e) => `${ESTADOS[e]}: ${porEstado[e] ?? 0}`).join(", ")}>
-              {ORDEN_ESTADOS.filter((e) => (porEstado[e] ?? 0) > 0).map((e) => (
-                <div
-                  key={e}
-                  title={`${ESTADOS[e]}: ${porEstado[e]}`}
-                  style={{ width: `${porcentaje(porEstado[e], filas.length)}%`, background: COLOR_BARRA[e] }}
-                  className="h-full rounded-sm"
-                />
-              ))}
-            </div>
-            <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm">
-              {ORDEN_ESTADOS.map((e) => (
-                <li key={e} className="flex items-center gap-2 text-slate-700">
-                  <span aria-hidden className="h-2.5 w-2.5 rounded-sm" style={{ background: COLOR_BARRA[e] }} />
-                  {ESTADOS[e]}
-                  <span className="font-medium text-slate-900">{porEstado[e] ?? 0}</span>
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
-      </section>
+      {/* Donas: avance por estado, carga del equipo (Innovación) y activos por prioridad */}
+      <div className={`grid gap-6 md:grid-cols-2 ${esInnovacion ? "xl:grid-cols-4" : "xl:grid-cols-3"}`}>
+        <section className="card p-5" aria-labelledby="avance">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 id="avance" className="text-base font-medium text-slate-900">Avance por estado</h2>
+            <p className="text-sm text-slate-500">
+              {filas.length === 0 ? "Sin requerimientos" : `${porcentaje(porEstado.finalizado ?? 0, filas.length)} % finalizados`}
+            </p>
+          </div>
+          <div className="mt-4">
+            <Dona
+              segmentos={donaEstados}
+              centro={{ valor: filas.length, etiqueta: "en total" }}
+              descripcion={`Requerimientos por estado: ${donaEstados.map((s) => `${s.etiqueta} ${s.valor}`).join(", ")}.`}
+            />
+          </div>
+        </section>
 
-      <div className={`grid gap-6 ${esInnovacion ? "lg:grid-cols-2" : ""}`}>
         {esInnovacion && (
           <section className="card p-5" aria-labelledby="carga">
-            <h2 id="carga" className="text-base font-semibold text-slate-900">Carga del equipo</h2>
-            <p className="mt-1 text-sm text-slate-500">Requerimientos activos asignados a cada miembro.</p>
-            <ul className="mt-4 space-y-3">
-              {cargaEquipo.map((m) => (
-                <Barra key={m.id} etiqueta={m.nombre} valor={m.total} max={maxCarga} color="#4f46e5" />
-              ))}
-              <Barra etiqueta="Sin asignar" valor={sinAsignar.length} max={maxCarga} color="#64748b" enfasis={sinAsignar.length > 0} />
-            </ul>
+            <h2 id="carga" className="text-base font-medium text-slate-900">Carga del equipo</h2>
+            <p className="mt-1 text-sm text-slate-500">Asignaciones de requerimientos activos por miembro.</p>
+            <div className="mt-4">
+              <Dona
+                segmentos={donaEquipo}
+                centro={{ valor: asignaciones, etiqueta: "asignaciones" }}
+                descripcion={`Carga del equipo: ${donaEquipo.map((s) => `${s.etiqueta} ${s.valor}`).join(", ")}.`}
+              />
+            </div>
           </section>
         )}
 
         <section className="card p-5" aria-labelledby="prioridad">
-          <h2 id="prioridad" className="text-base font-semibold text-slate-900">Activos por prioridad</h2>
+          <h2 id="prioridad" className="text-base font-medium text-slate-900">Activos por prioridad</h2>
           <p className="mt-1 text-sm text-slate-500">Se usa la prioridad final; si no está definida, la sugerida.</p>
-          <ul className="mt-4 space-y-3">
-            {PRIORIDADES.map((p) => (
-              <Barra key={p} etiqueta={p} valor={porPrioridad[p] ?? 0} max={Math.max(1, ...Object.values(porPrioridad))} color={COLOR_PRIORIDAD[p]} />
-            ))}
-          </ul>
+          <div className="mt-4">
+            <Dona
+              segmentos={donaPrioridad}
+              centro={{ valor: activos.length, etiqueta: "activos" }}
+              descripcion={`Requerimientos activos por prioridad: ${donaPrioridad.map((s) => `${s.etiqueta} ${s.valor}`).join(", ")}.`}
+            />
+          </div>
+        </section>
+
+        <section className="card p-5" aria-labelledby="unidades">
+          <h2 id="unidades" className="text-base font-medium text-slate-900">Proyectos por unidad de negocio</h2>
+          <p className="mt-1 text-sm text-slate-500">Total de requerimientos de cada unidad, activos y finalizados.</p>
+          <div className="mt-4">
+            <Dona
+              segmentos={donaUnidades}
+              centro={{ valor: filas.length, etiqueta: "proyectos" }}
+              descripcion={`Proyectos por unidad de negocio: ${donaUnidades.map((s) => `${s.etiqueta} ${s.valor}`).join(", ")}.`}
+            />
+          </div>
         </section>
       </div>
 
@@ -195,19 +229,19 @@ export default async function Inicio() {
                       <Link href={`/requerimientos/${r.id}`} className="font-medium text-brand-600 hover:underline">{r.folio}</Link>
                     </td>
                     <td className="px-4 py-3">
-                      <p className="text-slate-800">{r.tipo_requerimiento}</p>
-                      <p className="text-xs text-slate-500">{r.nombre_solicitante} · {r.empresa_area}</p>
+                      <p className="text-slate-800">{tituloProyecto(r)}</p>
+                      <p className="text-xs text-slate-500">{r.nombre_solicitante ?? "Sin nombre"} · {r.empresa_area ?? SIN_DATO}</p>
                     </td>
                     <td className="px-4 py-3"><BadgeEstado estado={r.estado} /></td>
                     <td className="px-4 py-3"><BadgePrioridad prioridad={r.prioridad_final ?? r.prioridad_sugerida} /></td>
                     {esInnovacion && (
                       <td className="px-4 py-3 text-slate-700">
-                        {r.asignados.length === 0 ? <span className="text-amber-700">Sin asignar</span> : r.asignados.map((a) => a.nombre.split(" ")[0]).join(", ")}
+                        {r.asignados.length === 0 ? <span className="text-cobre-700">Sin asignar</span> : r.asignados.map((a) => a.nombre.split(" ")[0]).join(", ")}
                       </td>
                     )}
                     <td className="px-4 py-3 whitespace-nowrap">
                       <p className="text-slate-800">{formatearFecha(fecha)}</p>
-                      <p className={`text-xs ${dias < 0 ? "font-medium text-red-700" : dias <= 7 ? "text-amber-700" : "text-slate-500"}`}>{describirDias(dias)}</p>
+                      <p className={`text-xs ${dias < 0 ? "font-medium text-cobre-700" : dias <= 7 ? "text-cobre-700" : "text-slate-500"}`}>{describirDias(dias)}</p>
                     </td>
                   </tr>
                 ))}
@@ -246,7 +280,7 @@ export default async function Inicio() {
                 <li key={r.id} className="flex items-center justify-between gap-3 py-2 text-sm">
                   <div className="min-w-0">
                     <Link href={`/requerimientos/${r.id}`} className="font-mono text-xs font-medium text-brand-600 hover:underline">{r.folio}</Link>
-                    <p className="truncate text-slate-700">{r.tipo_requerimiento}</p>
+                    <p className="truncate text-slate-700">{tituloProyecto(r)}</p>
                   </div>
                   <div className="shrink-0 text-right">
                     <BadgeEstado estado={r.estado} />
@@ -262,37 +296,27 @@ export default async function Inicio() {
   );
 }
 
+/** Prioridad es ordinal: rampa secuencial de Cobre (más urgente, más oscuro) y Baja en neutro. Validada para daltonismo. */
 const COLOR_PRIORIDAD: Record<string, string> = {
-  Crítica: "#b91c1c",
-  Alta: "#c2410c",
-  Media: "#a16207",
-  Baja: "#64748b",
+  Crítica: "#744526",
+  Alta: "#c0835a",
+  Media: "#e6c8b0",
+  Baja: "#9c9891",
 };
 
 function Indicador({ etiqueta, valor, href, detalle, color, alerta }: { etiqueta: string; valor: number; href: string; detalle?: string; color?: string; alerta?: boolean }) {
   return (
-    <Link href={href} className={`card flex flex-col gap-1 p-4 transition hover:border-brand-300 hover:shadow-md ${alerta ? "border-red-200 bg-red-50" : ""}`}>
+    <Link href={href} className={`card flex flex-col gap-1 p-4 transition hover:border-brand-300 hover:shadow-md ${alerta ? "border-cobre-200 bg-cobre-50" : ""}`}>
       <span className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-slate-500">
         {color && <span aria-hidden className="h-2 w-2 rounded-sm" style={{ background: color }} />}
         {etiqueta}
       </span>
-      <span className={`text-3xl font-semibold tabular-nums ${alerta ? "text-red-700" : "text-slate-900"}`}>{valor}</span>
+      <span className={`text-3xl font-semibold tabular-nums ${alerta ? "text-cobre-700" : "text-slate-900"}`}>{valor}</span>
       {detalle && <span className="text-xs text-slate-500">{detalle}</span>}
     </Link>
   );
 }
 
-function Barra({ etiqueta, valor, max, color, enfasis }: { etiqueta: string; valor: number; max: number; color: string; enfasis?: boolean }) {
-  return (
-    <li className="grid grid-cols-[minmax(0,150px)_1fr_2rem] items-center gap-3 text-sm">
-      <span className={`truncate ${enfasis ? "font-medium text-amber-700" : "text-slate-700"}`}>{etiqueta}</span>
-      <div className="h-2.5 w-full rounded bg-slate-100" title={`${etiqueta}: ${valor}`}>
-        <div className="h-full rounded" style={{ width: `${porcentaje(valor, max)}%`, background: color }} />
-      </div>
-      <span className="text-right font-medium tabular-nums text-slate-900">{valor}</span>
-    </li>
-  );
-}
 
 function contar<T>(xs: T[], clave: (x: T) => string): Record<string, number> {
   const r: Record<string, number> = {};

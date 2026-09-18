@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { ESTADOS, PRIORIDADES } from "@/lib/formulario";
 import { requerirUsuario } from "@/lib/auth";
 
@@ -57,4 +58,31 @@ export async function actualizarGestion(_prev: EstadoPanel, fd: FormData): Promi
   revalidatePath(`/requerimientos/${id}`);
   revalidatePath("/requerimientos");
   return { ok: true };
+}
+
+export type ResultadoEliminar = { error: string };
+
+/**
+ * Elimina un requerimiento de forma definitiva (solo Innovación; la RLS lo exige también).
+ * Si tiene éxito redirige a la lista con el folio eliminado.
+ */
+export async function eliminarRequerimiento(id: string): Promise<ResultadoEliminar | undefined> {
+  const { supabase, perfil } = await requerirUsuario();
+  if (perfil.rol !== "innovacion") return { error: "Solo el equipo de Innovación puede eliminar requerimientos." };
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return { error: "Requerimiento no válido." };
+
+  const { data, error } = await supabase.from("requerimientos").delete().eq("id", id).select("folio").maybeSingle<{ folio: string }>();
+  if (error) {
+    console.error("Error al eliminar requerimiento", error);
+    return { error: "No fue posible eliminar el requerimiento." };
+  }
+  if (!data) {
+    // RLS sin política de borrado o registro inexistente: no se borró nada.
+    return { error: "No se eliminó nada. Verifica que la migración 0007 esté aplicada." };
+  }
+
+  revalidatePath("/requerimientos");
+  revalidatePath("/proyectos");
+  revalidatePath("/");
+  redirect(`/requerimientos?eliminado=${encodeURIComponent(data.folio)}`);
 }

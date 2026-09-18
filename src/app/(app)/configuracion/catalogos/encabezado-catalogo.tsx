@@ -11,7 +11,7 @@ export function EncabezadoCatalogo({ titulo, descripcion }: { titulo: string; de
         ]}
       />
       <div>
-        <h1 className="text-2xl font-semibold text-slate-900">{titulo}</h1>
+        <h1 className="text-2xl font-medium text-slate-900">{titulo}</h1>
         <p className="mt-1 text-sm text-slate-600">{descripcion}</p>
       </div>
     </>
@@ -20,7 +20,7 @@ export function EncabezadoCatalogo({ titulo, descripcion }: { titulo: string; de
 
 export function Vacio({ children }: { children: React.ReactNode }) {
   return (
-    <p className="rounded-md border border-dashed border-slate-300 px-3 py-8 text-center text-sm text-slate-500">
+    <p className="rounded-md border border-dashed border-slate-300 px-3 py-8 text-sm text-slate-500">
       {children}
     </p>
   );

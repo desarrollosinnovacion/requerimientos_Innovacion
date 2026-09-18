@@ -1,50 +1,104 @@
 @import "tailwindcss";
 
 /* =========================================================================
-   Paleta de marca SICSA
-   Cambia SOLO estos valores para re-colorear toda la aplicación.
-   `brand`  = color principal (botones, enlaces, selección, logo)
-   `brand-dark` = color de la barra lateral
-   `accent` = color secundario / acento
+   Identidad visual SICSA · Manual de identidad visual v1.0 (sept. 2026)
+   -------------------------------------------------------------------------
+   Primarios  Verde SICSA #175641 (voz institucional) · Beige SICSA #C2B59B
+   Acentos    Cobre #A7663A (señalar, alertas) · Verde Profundo #0B2B21
+   Neutros    Hueso #F4F1EA · Piedra #D8D5CE · Humo #6E6B66 · Tinta #1C1B1A
+   Tipografía Archivo 400/500/600 (texto y títulos) · Jost 300 (marca)
+   Iconos     Lucide, trazo 1.5, sin relleno. Sin emoji ni círculos de color.
+   Forma      El manual pide cero radio y sin sombras. Por decisión del portal
+              (18-sep-2026) se usan radios suaves (4–8 px) y una sombra ligera
+              teñida de Tinta; se ajustan aquí, en --radius-* y --shadow-*.
+   Los valores viven aquí; el resto de la app solo usa las clases de Tailwind.
    ========================================================================= */
 :root {
-  --brand-50:  #eef2ff;
-  --brand-100: #e0e7ff;
-  --brand-200: #c7d2fe;
-  --brand-300: #a5b4fc;
-  --brand-400: #818cf8;
-  --brand-500: #6366f1;
-  --brand-600: #4f46e5;
-  --brand-700: #4338ca;
-  --brand-800: #3730a3;
-  --brand-900: #312e81;
+  --sicsa-verde: #175641;
+  --sicsa-beige: #C2B59B;
+  --sicsa-cobre: #A7663A;
+  --sicsa-verde-profundo: #0B2B21;
+  --sicsa-hueso: #F4F1EA;
+  --sicsa-piedra: #D8D5CE;
+  --sicsa-humo: #6E6B66;
+  --sicsa-tinta: #1C1B1A;
 
-  --sidebar-bg: #0f172a;        /* fondo de la barra lateral */
-  --sidebar-fg: #e2e8f0;        /* texto de la barra lateral */
-  --sidebar-muted: #94a3b8;     /* texto secundario en la barra */
-  --sidebar-active-bg: var(--brand-600);
-  --sidebar-active-fg: #ffffff;
-  --sidebar-hover-bg: rgba(255, 255, 255, 0.08);
-  --sidebar-border: rgba(255, 255, 255, 0.1);
+  /* Barra lateral: Hueso sobre Verde (7.7:1); Beige para texto secundario. */
+  --sidebar-bg: var(--sicsa-verde);
+  --sidebar-fg: var(--sicsa-hueso);
+  --sidebar-muted: var(--sicsa-beige);
+  --sidebar-active-bg: var(--sicsa-verde-profundo);
+  --sidebar-active-fg: var(--sicsa-hueso);
+  --sidebar-hover-bg: #134a38;
+  --sidebar-border: #2f6a55;
 
-  --page-bg: #f4f5f7;
-  --page-fg: #0f172a;
+  --page-bg: var(--sicsa-hueso);
+  --page-fg: var(--sicsa-tinta);
 }
 
 @theme inline {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-archivo), Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
 
-  --color-brand-50:  var(--brand-50);
-  --color-brand-100: var(--brand-100);
-  --color-brand-200: var(--brand-200);
-  --color-brand-300: var(--brand-300);
-  --color-brand-400: var(--brand-400);
-  --color-brand-500: var(--brand-500);
-  --color-brand-600: var(--brand-600);
-  --color-brand-700: var(--brand-700);
-  --color-brand-800: var(--brand-800);
-  --color-brand-900: var(--brand-900);
+  /* Radios suaves: apenas quitan la dureza de la esquina. */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 10px;
+  --radius-2xl: 12px;
+  --radius-3xl: 16px;
+  --radius-4xl: 20px;
+  --radius: 4px;
+
+  /* Sombras ligeras teñidas de Tinta, nunca negras puras. */
+  --shadow-xs: 0 1px 2px rgb(28 27 26 / 0.05);
+  --shadow-sm: 0 1px 2px rgb(28 27 26 / 0.06), 0 1px 3px rgb(28 27 26 / 0.08);
+  --shadow-md: 0 2px 6px rgb(28 27 26 / 0.08), 0 4px 12px rgb(28 27 26 / 0.08);
+  --shadow-lg: 0 8px 24px rgb(28 27 26 / 0.12);
+
+  /* Rampa del Verde SICSA (600 = color de marca, 900 = Verde Profundo). */
+  --color-brand-50:  #eef4f1;
+  --color-brand-100: #d9e7e0;
+  --color-brand-200: #b4cfc2;
+  --color-brand-300: #86b09d;
+  --color-brand-400: #4f8c73;
+  --color-brand-500: #2b6f55;
+  --color-brand-600: var(--sicsa-verde);
+  --color-brand-700: #134a38;
+  --color-brand-800: #0f3c2e;
+  --color-brand-900: var(--sicsa-verde-profundo);
+
+  /* Neutros cálidos de la marca, expuestos como `slate` para toda la app:
+     100 = Hueso, 200 = Piedra, 500 = Humo, 900 = Tinta. */
+  --color-slate-50:  #faf9f6;
+  --color-slate-100: var(--sicsa-hueso);
+  --color-slate-200: var(--sicsa-piedra);
+  --color-slate-300: #c4c0b7;
+  --color-slate-400: #9c9891;
+  --color-slate-500: var(--sicsa-humo);
+  --color-slate-600: #55524d;
+  --color-slate-700: #3f3d39;
+  --color-slate-800: #2b2a27;
+  --color-slate-900: var(--sicsa-tinta);
+  --color-slate-950: #121110;
+
+  /* Cobre: el único acento para señalar (alertas, errores, cifras clave).
+     Como texto solo desde 600 sobre fondos claros (4.6:1 mínimo). */
+  --color-cobre-50:  #faf4ef;
+  --color-cobre-100: #f3e4d8;
+  --color-cobre-200: #e6c8b0;
+  --color-cobre-300: #d5a684;
+  --color-cobre-400: #c0835a;
+  --color-cobre-500: var(--sicsa-cobre);
+  --color-cobre-600: #8f5630;
+  --color-cobre-700: #744526;
+  --color-cobre-800: #58351e;
+  --color-cobre-900: #3d2516;
+
+  /* Beige SICSA: solo con texto Tinta encima (8.6:1); nunca texto claro. */
+  --color-beige: var(--sicsa-beige);
+  --color-beige-100: #ede8dc;
 
   --color-sidebar: var(--sidebar-bg);
   --color-sidebar-fg: var(--sidebar-fg);
@@ -60,20 +114,44 @@ body {
   color: var(--page-fg);
 }
 
+/* Títulos: Archivo Medium, interletrado ligeramente cerrado (manual, p. 07). */
+h1, h2, h3 {
+  letter-spacing: -0.01em;
+}
+
+/* Foco por teclado: regla de 2 px en Verde SICSA, nunca el anillo azul del navegador. */
+:focus-visible {
+  outline: 2px solid var(--sicsa-verde);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--sicsa-beige);
+  color: var(--sicsa-tinta);
+}
+
 @layer components {
   .input {
-    @apply block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200 disabled:bg-slate-100;
+    @apply block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-200 disabled:bg-slate-100;
   }
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-md bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-300 disabled:cursor-not-allowed disabled:opacity-60;
+    @apply inline-flex items-center justify-center gap-2 rounded-md bg-brand-600 px-4 py-2 shadow-sm text-sm font-medium text-slate-100 transition hover:bg-brand-900 focus:outline-none focus:ring-2 focus:ring-brand-300 disabled:cursor-not-allowed disabled:opacity-60;
   }
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-brand-200 disabled:opacity-60;
+    @apply inline-flex items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-4 py-2 shadow-sm text-sm font-medium text-slate-900 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-200 disabled:opacity-60;
   }
   .card {
     @apply rounded-lg border border-slate-200 bg-white shadow-sm;
   }
   .label {
     @apply block text-sm font-medium text-slate-800;
+  }
+  /* Etiqueta de marca: 11 px, versalitas, interletrado .18em (manual, escala tipográfica). */
+  .etiqueta {
+    @apply text-[11px] font-medium uppercase tracking-[0.18em];
+  }
+  /* Regla fuerte de sección (2 px Tinta), como en el manual. */
+  .regla {
+    @apply h-0.5 bg-slate-900;
   }
 }

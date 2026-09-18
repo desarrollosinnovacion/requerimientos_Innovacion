@@ -38,15 +38,21 @@ export const SECCIONES: Seccion[] = [
     id: "general",
     titulo: "1. Información general",
     campos: [
-      { tipo: "texto", nombre: "nombre_solicitante", etiqueta: "Nombre del solicitante", requerido: true },
-      { tipo: "empresa_area", nombre: "empresa_area", etiqueta: "Empresa / departamento / área", requerido: true },
-      { tipo: "texto", nombre: "correo", etiqueta: "Correo electrónico", requerido: true },
-      { tipo: "texto", nombre: "product_owner", etiqueta: "Responsable del requerimiento / Product Owner", requerido: true },
+      {
+        tipo: "texto",
+        nombre: "nombre_proyecto",
+        etiqueta: "Nombre del proyecto",
+        placeholder: "Ej. Portal de proveedores, Reporte de cartera…",
+        ayuda: "Un nombre corto para identificar el proyecto en listas y tablero.",
+      },
+      { tipo: "texto", nombre: "nombre_solicitante", etiqueta: "Nombre del solicitante" },
+      { tipo: "empresa_area", nombre: "empresa_area", etiqueta: "Empresa / departamento / área" },
+      { tipo: "texto", nombre: "correo", etiqueta: "Correo electrónico" },
+      { tipo: "texto", nombre: "product_owner", etiqueta: "Responsable del requerimiento / Product Owner" },
       {
         tipo: "radio",
         nombre: "tipo_requerimiento",
         etiqueta: "Tipo de requerimiento",
-        requerido: true,
         otro: "tipo_requerimiento_otro",
         opciones: [
           "Nueva funcionalidad",
@@ -71,13 +77,11 @@ export const SECCIONES: Seccion[] = [
         nombre: "problema",
         etiqueta: "¿Qué problema se busca resolver?",
         ayuda: "Describe la situación actual, el problema y por qué necesita resolverse.",
-        requerido: true,
       },
       {
         tipo: "radio",
         nombre: "proceso_actual_tipo",
         etiqueta: "¿Cómo se realiza actualmente este proceso?",
-        requerido: true,
         otro: "proceso_actual_tipo_otro",
         opciones: [
           "Manualmente",
@@ -88,7 +92,7 @@ export const SECCIONES: Seccion[] = [
           "Otro",
         ],
       },
-      { tipo: "textarea", nombre: "proceso_actual_desc", etiqueta: "Describe brevemente el proceso actual", requerido: true },
+      { tipo: "textarea", nombre: "proceso_actual_desc", etiqueta: "Describe brevemente el proceso actual" },
     ],
   },
   {
@@ -100,14 +104,12 @@ export const SECCIONES: Seccion[] = [
         nombre: "resultado_esperado",
         etiqueta: "¿Qué necesitas que haga la solución?",
         ayuda: "Describe el resultado esperado desde la perspectiva del usuario.",
-        requerido: true,
       },
-      { tipo: "textarea", nombre: "criterio_exito", etiqueta: "¿Cómo sabremos que el requerimiento fue resuelto exitosamente?", requerido: true },
+      { tipo: "textarea", nombre: "criterio_exito", etiqueta: "¿Cómo sabremos que el requerimiento fue resuelto exitosamente?" },
       {
         tipo: "checkbox",
         nombre: "usuarios_beneficiados",
         etiqueta: "¿Quiénes serán los principales usuarios beneficiados?",
-        requerido: true,
         otro: "usuarios_beneficiados_otro",
         opciones: [
           "Equipo interno",
@@ -133,14 +135,12 @@ export const SECCIONES: Seccion[] = [
         nombre: "flujo_esperado",
         etiqueta: "Describe el flujo esperado",
         ayuda: "Ejemplo: 1) El usuario inicia... 2) El sistema debe... 3) Luego debe... 4) Resultado final...",
-        requerido: true,
       },
       {
         tipo: "textarea",
         nombre: "funcionalidades_indispensables",
         etiqueta: "¿Cuáles son las funcionalidades indispensables?",
         ayuda: "Enumera únicamente lo que debe existir para considerar el requerimiento funcional.",
-        requerido: true,
       },
       { tipo: "textarea", nombre: "funcionalidades_deseables", etiqueta: "¿Qué funcionalidades serían deseables, pero no indispensables?" },
     ],
@@ -169,7 +169,7 @@ export const SECCIONES: Seccion[] = [
           "Otro",
         ],
       },
-      { tipo: "radio", nombre: "requiere_integracion", etiqueta: "¿Se requiere integración entre sistemas?", requerido: true, opciones: SI_NO_NS },
+      { tipo: "radio", nombre: "requiere_integracion", etiqueta: "¿Se requiere integración entre sistemas?", opciones: SI_NO_NS },
       {
         tipo: "textarea",
         nombre: "integracion_sistemas",
@@ -205,7 +205,6 @@ export const SECCIONES: Seccion[] = [
         tipo: "radio",
         nombre: "info_sensible",
         etiqueta: "¿El desarrollo utilizará información sensible, financiera, personal o confidencial?",
-        requerido: true,
         opciones: SI_NO_NS,
       },
       {
@@ -224,7 +223,6 @@ export const SECCIONES: Seccion[] = [
         tipo: "checkbox",
         nombre: "impacto_no_desarrollar",
         etiqueta: "¿Qué sucede si este requerimiento NO se desarrolla?",
-        requerido: true,
         otro: "impacto_no_desarrollar_otro",
         opciones: [
           "Impacto crítico en la operación",
@@ -242,7 +240,6 @@ export const SECCIONES: Seccion[] = [
         tipo: "checkbox",
         nombre: "impacto_esperado",
         etiqueta: "¿Cuál es el impacto esperado de la solución?",
-        requerido: true,
         otro: "impacto_esperado_otro",
         opciones: [
           "Ahorro de tiempo",
@@ -266,22 +263,20 @@ export const SECCIONES: Seccion[] = [
         tipo: "radio",
         nombre: "prioridad_sugerida",
         etiqueta: "Prioridad sugerida por el solicitante",
-        requerido: true,
         opciones: ["Crítica", "Alta", "Media", "Baja"],
       },
-      { tipo: "textarea", nombre: "justificacion_prioridad", etiqueta: "Justifica la prioridad seleccionada", requerido: true },
+      { tipo: "textarea", nombre: "justificacion_prioridad", etiqueta: "Justifica la prioridad seleccionada" },
     ],
   },
   {
     id: "fecha",
     titulo: "8. Fecha requerida",
     campos: [
-      { tipo: "radio", nombre: "tiene_fecha_limite", etiqueta: "¿Existe una fecha límite?", requerido: true, opciones: ["Sí", "No"] },
+      { tipo: "radio", nombre: "tiene_fecha_limite", etiqueta: "¿Existe una fecha límite?", opciones: ["Sí", "No"] },
       {
         tipo: "fecha",
         nombre: "fecha_limite",
         etiqueta: "Indica la fecha",
-        requerido: true,
         condicion: { campo: "tiene_fecha_limite", valor: "Sí" },
       },
       {
@@ -338,6 +333,11 @@ export const PRIORIDADES = ["Crítica", "Alta", "Media", "Baja"] as const;
 
 export type ValoresFormulario = Record<string, string | string[] | null>;
 
+/** Respuesta de las acciones que guardan el formulario; `destino` es la ruta a la que navegar. */
+export type ResultadoEnvio =
+  | { ok: true; destino: string }
+  | { ok: false; errores: Record<string, string>; mensaje?: string };
+
 /** Todos los campos (incluidos los "otro") en orden. */
 export function todosLosCampos(): Campo[] {
   return SECCIONES.flatMap((s) => s.campos);
@@ -369,9 +369,7 @@ export function parsearFormulario(fd: FormData): {
       datos.area_id = limpiar(fd.get("area_id")) || null;
       // El texto combinado lo construye el servidor a partir de los catálogos.
       datos[campo.nombre] = null;
-      if (!datos.empresa_id || !datos.departamento_id) {
-        errores[campo.nombre] = "Selecciona la empresa y el departamento.";
-      }
+      // Ningún campo es obligatorio: si no se elige empresa, todo queda en null.
       continue;
     }
     if (campo.tipo === "checkbox") {

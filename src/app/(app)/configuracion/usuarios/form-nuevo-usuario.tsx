@@ -34,7 +34,7 @@ export function FormNuevoUsuario({ deshabilitado }: { deshabilitado: boolean }) 
       <p className="text-xs text-slate-500">
         El sistema genera una contraseña temporal. El usuario deberá cambiarla la primera vez que entre.
       </p>
-      {res.error && <p role="alert" className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{res.error}</p>}
+      {res.error && <p role="alert" className="rounded-md bg-cobre-50 px-3 py-2 text-sm text-cobre-700">{res.error}</p>}
       {res.password && res.correo && !pendiente && <PasswordGenerada correo={res.correo} password={res.password} />}
       <div className="flex justify-end">
         <button type="submit" disabled={deshabilitado || pendiente} className="btn-primary">

@@ -15,3 +15,8 @@ export function formatearTamano(bytes: number | null) {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
+
+/** Título de un requerimiento: el nombre del proyecto o, si no lo tiene, el tipo. */
+export function tituloProyecto(r: { nombre_proyecto: string | null; tipo_requerimiento: string | null }) {
+  return r.nombre_proyecto?.trim() || r.tipo_requerimiento || "Sin nombre de proyecto";
+}

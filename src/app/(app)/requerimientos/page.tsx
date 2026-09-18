@@ -1,19 +1,19 @@
 import Link from "next/link";
 import { requerirUsuario } from "@/lib/auth";
 import { ESTADOS, type Estado } from "@/lib/formulario";
-import { formatearFecha } from "@/lib/formato";
+import { formatearFecha, tituloProyecto } from "@/lib/formato";
 import type { RequerimientoResumen } from "@/lib/tipos";
 import { BadgeEstado, BadgePrioridad } from "@/components/badges";
 
 export default async function ListaRequerimientos(props: PageProps<"/requerimientos">) {
-  const { estado, q } = await props.searchParams;
+  const { estado, q, eliminado } = await props.searchParams;
   const { supabase, perfil } = await requerirUsuario();
   const esInnovacion = perfil.rol === "innovacion";
 
   let consulta = supabase
     .from("requerimientos")
     .select(
-      "id, folio, estado, tipo_requerimiento, prioridad_sugerida, prioridad_final, nombre_solicitante, empresa_area, creado_en",
+      "id, folio, estado, nombre_proyecto, tipo_requerimiento, prioridad_sugerida, prioridad_final, nombre_solicitante, empresa_area, creado_en",
     )
     .order("creado_en", { ascending: false });
 
@@ -23,7 +23,7 @@ export default async function ListaRequerimientos(props: PageProps<"/requerimien
   if (typeof q === "string" && q.trim()) {
     const t = `%${q.trim()}%`;
     consulta = consulta.or(
-      `folio.ilike.${t},nombre_solicitante.ilike.${t},empresa_area.ilike.${t},tipo_requerimiento.ilike.${t}`,
+      `folio.ilike.${t},nombre_proyecto.ilike.${t},nombre_solicitante.ilike.${t},empresa_area.ilike.${t},tipo_requerimiento.ilike.${t}`,
     );
   }
 
@@ -34,7 +34,7 @@ export default async function ListaRequerimientos(props: PageProps<"/requerimien
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">
+          <h1 className="text-2xl font-medium text-slate-900">
             {esInnovacion ? "Todos los requerimientos" : "Mis requerimientos"}
           </h1>
           <p className="mt-1 text-sm text-slate-600">
@@ -48,6 +48,12 @@ export default async function ListaRequerimientos(props: PageProps<"/requerimien
         </Link>
       </div>
 
+      {typeof eliminado === "string" && /^REQ-\d{4}-\d{4}$/.test(eliminado) && (
+        <p role="status" className="rounded-md bg-brand-50 px-4 py-3 text-sm text-brand-800">
+          El requerimiento <strong>{eliminado}</strong> fue eliminado.
+        </p>
+      )}
+
       <form className="card flex flex-wrap items-end gap-3 p-4" method="get">
         <div className="min-w-48 flex-1">
           <label htmlFor="q" className="label text-xs">Buscar</label>
@@ -55,7 +61,7 @@ export default async function ListaRequerimientos(props: PageProps<"/requerimien
             id="q"
             name="q"
             defaultValue={typeof q === "string" ? q : ""}
-            placeholder="Folio, solicitante, área o tipo"
+            placeholder="Folio, proyecto, solicitante, área o tipo"
             className="input mt-1"
           />
         </div>
@@ -72,13 +78,13 @@ export default async function ListaRequerimientos(props: PageProps<"/requerimien
       </form>
 
       {error && (
-        <p role="alert" className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p role="alert" className="rounded-md bg-cobre-50 px-3 py-2 text-sm text-cobre-700">
           No fue posible cargar los requerimientos: {error.message}
         </p>
       )}
 
       {filas.length === 0 ? (
-        <div className="card p-12 text-center">
+        <div className="card p-12">
           <p className="text-slate-700">No hay requerimientos que mostrar.</p>
           <Link href="/requerimientos/nuevo" className="mt-4 inline-block text-sm font-medium text-brand-600 hover:underline">
             Crear el primero
@@ -90,7 +96,7 @@ export default async function ListaRequerimientos(props: PageProps<"/requerimien
             <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
               <tr>
                 <th className="px-4 py-3">Folio</th>
-                <th className="px-4 py-3">Tipo</th>
+                <th className="px-4 py-3">Proyecto</th>
                 {esInnovacion && <th className="px-4 py-3">Solicitante</th>}
                 <th className="px-4 py-3">Prioridad</th>
                 <th className="px-4 py-3">Estado</th>
@@ -105,11 +111,14 @@ export default async function ListaRequerimientos(props: PageProps<"/requerimien
                       {r.folio}
                     </Link>
                   </td>
-                  <td className="px-4 py-3 text-slate-800">{r.tipo_requerimiento}</td>
+                  <td className="px-4 py-3">
+                    <p className="text-slate-800">{tituloProyecto(r)}</p>
+                    {r.nombre_proyecto && r.tipo_requerimiento && <p className="text-xs text-slate-500">{r.tipo_requerimiento}</p>}
+                  </td>
                   {esInnovacion && (
                     <td className="px-4 py-3">
-                      <p className="text-slate-800">{r.nombre_solicitante}</p>
-                      <p className="text-xs text-slate-500">{r.empresa_area}</p>
+                      <p className="text-slate-800">{r.nombre_solicitante ?? "Sin nombre"}</p>
+                      <p className="text-xs text-slate-500">{r.empresa_area ?? "Sin unidad"}</p>
                     </td>
                   )}
                   <td className="px-4 py-3">

@@ -2,6 +2,8 @@ import Link from "next/link";
 import { requerirUsuario } from "@/lib/auth";
 import { cerrarSesion } from "@/app/login/actions";
 import { NavLinks, type NombreIcono } from "@/components/nav-links";
+import { LogoSicsa, SimboloSicsa } from "@/components/logo-sicsa";
+import { LogOut } from "lucide-react";
 
 export default async function AppLayout({ children }: LayoutProps<"/">) {
   const { perfil } = await requerirUsuario();
@@ -10,6 +12,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
   const enlaces: { href: string; etiqueta: string; icono: NombreIcono }[] = [
     { href: "/", etiqueta: "Inicio", icono: "inicio" },
     { href: "/requerimientos", etiqueta: "Requerimientos", icono: "lista" },
+    { href: "/proyectos", etiqueta: "Proyectos", icono: "tablero" },
     ...(esInnovacion ? [{ href: "/configuracion", etiqueta: "Configuración", icono: "engrane" as const }] : []),
   ];
 
@@ -17,14 +20,13 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
     <div className="flex min-h-screen">
       {/* Barra lateral siempre visible: compacta (solo iconos) en pantallas pequeñas, completa en grandes */}
       <aside className="sticky top-0 flex h-screen w-16 shrink-0 flex-col bg-sidebar text-sidebar-fg lg:w-64">
-        <div className="flex items-center gap-3 border-b border-sidebar-border px-3 py-4 lg:px-5">
-          <Link href="/" className="flex items-center gap-3" title="Requerimientos · Innovación">
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-brand-600 text-sm font-bold text-white">
-              SC
-            </span>
-            <span className="hidden leading-tight lg:block">
-              <span className="block text-sm font-semibold">Requerimientos</span>
-              <span className="block text-xs text-sidebar-muted">Departamento de Innovación</span>
+        <div className="border-b border-sidebar-border px-3 py-4 lg:px-5">
+          <Link href="/" className="block" title="Requerimientos · Innovación">
+            {/* Menos de 120 px de ancho: solo el símbolo (manual, p. 03). */}
+            <SimboloSicsa variante="beige" tamano={36} className="lg:hidden" />
+            <span className="hidden lg:block">
+              <LogoSicsa variante="beige" ancho={132} />
+              <span className="etiqueta mt-3 block text-sidebar-muted">Requerimientos · Innovación</span>
             </span>
           </Link>
         </div>
@@ -44,7 +46,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
               title="Cerrar sesión"
               className="flex w-full items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-sidebar-fg transition hover:bg-sidebar-hover lg:justify-start"
             >
-              <IconoSalir />
+              <LogOut aria-hidden className="h-5 w-5 shrink-0" strokeWidth={1.5} />
               <span className="hidden lg:inline">Cerrar sesión</span>
             </button>
           </form>
@@ -58,10 +60,3 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
   );
 }
 
-function IconoSalir() {
-  return (
-    <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
-    </svg>
-  );
-}

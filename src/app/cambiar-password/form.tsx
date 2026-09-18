@@ -18,7 +18,7 @@ export function CambiarPasswordForm() {
         <input id="confirmar" name="confirmar" type="password" autoComplete="new-password" required className="input mt-1" />
       </div>
       {estado.error && (
-        <p role="alert" className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{estado.error}</p>
+        <p role="alert" className="rounded-md bg-cobre-50 px-3 py-2 text-sm text-cobre-700">{estado.error}</p>
       )}
       <button type="submit" disabled={pendiente} className="btn-primary w-full">
         {pendiente ? "Guardando…" : "Guardar y continuar"}
