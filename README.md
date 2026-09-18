@@ -1,36 +1,69 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# INN Requerimientos
 
-## Getting Started
+Portal para que las áreas de la empresa envíen requerimientos de desarrollo al Departamento de Innovación.
 
-First, run the development server:
+- **Next.js 16** (App Router) + TypeScript + Tailwind
+- **Supabase**: autenticación, base de datos Postgres con RLS y Storage para adjuntos
+- **Vercel**: despliegue
+
+## 1. Crear el proyecto en Supabase
+
+1. Entra a <https://supabase.com/dashboard> y crea un proyecto nuevo.
+2. Ve a **SQL Editor** y ejecuta, en orden, cada archivo de `supabase/migrations/` (`0001_init.sql`, `0002_catalogos.sql`, `0003_usuarios.sql`, `0004_estado_proyecto.sql`, `0005_equipo_asignado.sql`).
+3. En **Authentication → URL Configuration** agrega:
+   - Site URL: `http://localhost:3000` (y luego la URL de Vercel)
+   - Redirect URLs: `http://localhost:3000/auth/callback` y `https://TU-APP.vercel.app/auth/callback`
+4. En **Authentication → Sign In / Providers** desactiva **Confirm email** y también **Allow new users to sign up**. No hay registro público: las cuentas se crean desde Configuración → Usuarios.
+5. Copia **Project Settings → API → Project URL**, **anon public key** y **service_role key** (esta última es secreta; solo se usa en el servidor).
+
+## 2. Correr en local
 
 ```bash
+cp .env.example .env.local   # pega la URL y la anon key
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 3. Primer usuario de Innovación
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Como no hay registro público, el primer usuario se crea desde el panel de Supabase: **Authentication → Users → Add user** (marca "Auto Confirm User"). Luego dale el rol de Innovación en el SQL Editor:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```sql
+update public.perfiles set rol = 'innovacion' where correo = 'persona@empresa.com';
+```
 
-## Learn More
+A partir de ahí, ese usuario crea a los demás desde **Configuración → Usuarios** dentro de la app. El sistema genera una contraseña temporal (se muestra una sola vez) y el usuario debe cambiarla al entrar. Desde la misma pantalla se puede reiniciar la contraseña, desactivar/activar y eliminar usuarios.
 
-To learn more about Next.js, take a look at the following resources:
+## 4. Desplegar en Vercel
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Sube el repo a GitHub y en <https://vercel.com/new> importa el proyecto.
+2. En **Environment Variables** agrega `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` y `SUPABASE_SERVICE_ROLE_KEY`.
+3. Deploy. Después agrega la URL final de Vercel en Supabase (paso 1.3).
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Estructura
 
-## Deploy on Vercel
+```
+supabase/migrations/0001_init.sql   Esquema, RLS, folio automático, bucket de adjuntos
+supabase/migrations/0002_catalogos.sql  Catálogos empresas -> departamentos -> áreas
+supabase/migrations/0003_usuarios.sql   Cambio obligatorio de contraseña y desactivación de usuarios
+supabase/migrations/0004_estado_proyecto.sql  Estados del proyecto (No iniciado, Iniciado, En pruebas, Finalizado)
+supabase/migrations/0005_equipo_asignado.sql  Equipo de Innovación asignado a cada requerimiento
+src/lib/formulario.ts               Definición del formulario (secciones, campos, opciones, validación)
+src/lib/catalogos.ts                Carga de catálogos como árbol
+src/app/(app)/configuracion         Módulo Configuración (solo rol innovacion): Catálogos, Usuarios
+src/lib/supabase/admin.ts           Cliente service_role para administrar usuarios (solo servidor)
+src/lib/supabase/                   Clientes de Supabase (servidor, navegador, proxy de sesión)
+src/proxy.ts                        Protege rutas: redirige a /login sin sesión
+src/app/login                       Inicio de sesión (sin registro público)
+src/app/(app)/page.tsx              Dashboard de inicio (estados, carga del equipo, vencimientos, actividad)
+src/app/(app)/requerimientos        Lista, formulario nuevo y detalle
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Roles
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Rol           | Puede                                                              |
+|---------------|--------------------------------------------------------------------|
+| `solicitante` | Crear requerimientos, ver los suyos, adjuntar archivos             |
+| `innovacion`  | Ver todos, cambiar el estado del proyecto (No iniciado → Iniciado → En pruebas → Finalizado), asignar miembros del equipo, prioridad final, fecha estimada y notas, administrar catálogos y usuarios en Configuración |
+
+Las reglas se aplican en la base de datos (Row Level Security), no solo en la interfaz.
