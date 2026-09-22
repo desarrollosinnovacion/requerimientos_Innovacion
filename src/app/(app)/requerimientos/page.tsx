@@ -1,9 +1,18 @@
 import Link from "next/link";
 import { requerirUsuario } from "@/lib/auth";
-import { ESTADOS, type Estado } from "@/lib/formulario";
+import { ESTADOS, PRIORIDADES, type Estado } from "@/lib/formulario";
 import { formatearFecha, tituloProyecto } from "@/lib/formato";
-import type { RequerimientoResumen } from "@/lib/tipos";
-import { BadgeEstado, BadgePrioridad } from "@/components/badges";
+import type { MiembroEquipo, RequerimientoResumen } from "@/lib/tipos";
+import { BadgeEstado, BadgePrioridad, CLASES_ESTADO, CLASES_PRIORIDAD } from "@/components/badges";
+import { AsignarEquipo } from "./asignar-equipo";
+import { SelectorRapido } from "./selector-rapido";
+import { cambiarPrioridad } from "./actions";
+import { cambiarEstado } from "../proyectos/actions";
+
+const OPCIONES_ESTADO = (Object.keys(ESTADOS) as Estado[]).map((e) => ({ valor: e, etiqueta: ESTADOS[e] }));
+
+type Fila = RequerimientoResumen & { asignados: string[] };
+type FilaCruda = RequerimientoResumen & { asignados: { perfil_id: string }[] | null };
 
 export default async function ListaRequerimientos(props: PageProps<"/requerimientos">) {
   const { estado, q, eliminado } = await props.searchParams;
@@ -13,7 +22,7 @@ export default async function ListaRequerimientos(props: PageProps<"/requerimien
   let consulta = supabase
     .from("requerimientos")
     .select(
-      "id, folio, estado, nombre_proyecto, tipo_requerimiento, prioridad_sugerida, prioridad_final, nombre_solicitante, empresa_area, creado_en",
+      "id, folio, estado, nombre_proyecto, tipo_requerimiento, prioridad_sugerida, prioridad_final, nombre_solicitante, empresa_area, creado_en, asignados:requerimiento_asignados(perfil_id)",
     )
     .order("creado_en", { ascending: false });
 
@@ -27,8 +36,14 @@ export default async function ListaRequerimientos(props: PageProps<"/requerimien
     );
   }
 
-  const { data, error } = await consulta.returns<RequerimientoResumen[]>();
-  const filas = data ?? [];
+  const [{ data, error }, { data: equipoData }] = await Promise.all([
+    consulta.returns<FilaCruda[]>(),
+    esInnovacion
+      ? supabase.from("perfiles").select("id, nombre").eq("rol", "innovacion").eq("activo", true).order("nombre")
+      : Promise.resolve({ data: null }),
+  ]);
+  const filas: Fila[] = (data ?? []).map((r) => ({ ...r, asignados: (r.asignados ?? []).map((a) => a.perfil_id) }));
+  const equipo = (equipoData ?? []) as MiembroEquipo[];
 
   return (
     <div className="space-y-6">
@@ -98,6 +113,7 @@ export default async function ListaRequerimientos(props: PageProps<"/requerimien
                 <th className="px-4 py-3">Folio</th>
                 <th className="px-4 py-3">Proyecto</th>
                 {esInnovacion && <th className="px-4 py-3">Solicitante</th>}
+                {esInnovacion && <th className="px-4 py-3">Equipo</th>}
                 <th className="px-4 py-3">Prioridad</th>
                 <th className="px-4 py-3">Estado</th>
                 <th className="px-4 py-3">Fecha</th>
@@ -121,15 +137,46 @@ export default async function ListaRequerimientos(props: PageProps<"/requerimien
                       <p className="text-xs text-slate-500">{r.empresa_area ?? "Sin unidad"}</p>
                     </td>
                   )}
+                  {esInnovacion && (
+                    <td className="px-4 py-3">
+                      <AsignarEquipo id={r.id} equipo={equipo} asignados={r.asignados} />
+                    </td>
+                  )}
                   <td className="px-4 py-3">
-                    <BadgePrioridad prioridad={r.prioridad_final ?? r.prioridad_sugerida} />
+                    {esInnovacion ? (
+                      <SelectorRapido
+                        etiqueta={`Prioridad final de ${r.folio}`}
+                        valor={r.prioridad_final ?? ""}
+                        opciones={[
+                          { valor: "", etiqueta: r.prioridad_sugerida ? `Sugerida: ${r.prioridad_sugerida}` : "Sin definir" },
+                          ...PRIORIDADES.map((p) => ({ valor: p, etiqueta: p })),
+                        ]}
+                        // Sin prioridad final se colorea con la sugerida, igual que la etiqueta.
+                        clases={{ ...CLASES_PRIORIDAD, "": r.prioridad_sugerida ? CLASES_PRIORIDAD[r.prioridad_sugerida] : "bg-slate-100 text-slate-500" }}
+                        guardar={cambiarPrioridad.bind(null, r.id)}
+                      />
+                    ) : (
+                      <BadgePrioridad prioridad={r.prioridad_final ?? r.prioridad_sugerida} />
+                    )}
                     {r.prioridad_final && r.prioridad_final !== r.prioridad_sugerida && (
-                      <span className="ml-1 text-xs text-slate-400" title="Prioridad sugerida por el solicitante">
-                        (sug. {r.prioridad_sugerida})
-                      </span>
+                      <p className="mt-0.5 text-xs text-slate-400" title="Prioridad sugerida por el solicitante">
+                        sug. {r.prioridad_sugerida ?? "sin definir"}
+                      </p>
                     )}
                   </td>
-                  <td className="px-4 py-3"><BadgeEstado estado={r.estado} /></td>
+                  <td className="px-4 py-3">
+                    {esInnovacion ? (
+                      <SelectorRapido
+                        etiqueta={`Estado de ${r.folio}`}
+                        valor={r.estado}
+                        opciones={OPCIONES_ESTADO}
+                        clases={CLASES_ESTADO}
+                        guardar={cambiarEstado.bind(null, r.id)}
+                      />
+                    ) : (
+                      <BadgeEstado estado={r.estado} />
+                    )}
+                  </td>
                   <td className="px-4 py-3 whitespace-nowrap text-slate-600">{formatearFecha(r.creado_en)}</td>
                 </tr>
               ))}

@@ -1,13 +1,16 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { ESTADOS, type Estado } from "@/lib/formulario";
+import { ESTADOS } from "@/lib/formulario";
 import { requerirUsuario } from "@/lib/auth";
 
 export type ResultadoEstado = { ok: true } | { ok: false; error: string };
 
-/** Mueve un requerimiento a otra fase del tablero. Solo Innovación (la RLS también lo exige). */
-export async function cambiarEstado(id: string, estado: Estado): Promise<ResultadoEstado> {
+/**
+ * Mueve un requerimiento a otra fase (tablero y lista). Solo Innovación (la RLS también lo exige).
+ * Recibe `string` porque también llega desde un <select>; se valida contra ESTADOS.
+ */
+export async function cambiarEstado(id: string, estado: string): Promise<ResultadoEstado> {
   const { supabase, perfil } = await requerirUsuario();
   if (perfil.rol !== "innovacion") return { ok: false, error: "Solo el equipo de Innovación puede mover proyectos." };
   if (!/^[0-9a-f-]{36}$/i.test(id)) return { ok: false, error: "Requerimiento no válido." };
