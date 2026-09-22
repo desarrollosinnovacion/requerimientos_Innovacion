@@ -119,7 +119,8 @@ export function TableroProyectos({ tarjetas: iniciales, puedeMover }: Props) {
         <p role="alert" className="bg-cobre-50 px-3 py-2 text-sm text-cobre-700">{error}</p>
       )}
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      {/* Siete fases: columnas de ancho fijo con desplazamiento horizontal, como un planner. */}
+      <div className="-mx-1 flex snap-x gap-4 overflow-x-auto px-1 pb-2">
         {ORDEN_ESTADOS.map((estado, indice) => {
           const enColumna = visibles.filter((t) => t.estado === estado);
           const resaltada = columnaDestino === estado && arrastrando !== null;
@@ -137,7 +138,7 @@ export function TableroProyectos({ tarjetas: iniciales, puedeMover }: Props) {
                 if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setColumnaDestino(null);
               }}
               onDrop={(e) => alSoltar(e, estado)}
-              className={`flex min-h-[60vh] flex-col overflow-hidden rounded-lg border border-slate-200 border-t-2 bg-white shadow-sm transition ${
+              className={`flex min-h-[60vh] w-72 shrink-0 snap-start flex-col overflow-hidden rounded-lg border border-slate-200 border-t-2 bg-white shadow-sm transition ${
                 resaltada ? "ring-2 ring-brand-300 ring-inset" : ""
               }`}
               style={{ borderTopColor: COLOR_ESTADO[estado] }}
@@ -205,7 +206,7 @@ function Tarjeta({
   mover: (destino: Estado) => void;
 }) {
   const compromiso = [t.fecha_estimada_entrega, t.fecha_limite].filter((f): f is string => !!f).sort()[0] ?? null;
-  const atrasado = compromiso !== null && t.estado !== "finalizado" && compromiso < new Date().toISOString().slice(0, 10);
+  const atrasado = compromiso !== null && t.estado !== "entregado" && compromiso < new Date().toISOString().slice(0, 10);
 
   return (
     <li

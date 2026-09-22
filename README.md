@@ -9,7 +9,7 @@ Portal para que las áreas de la empresa envíen requerimientos de desarrollo al
 ## 1. Crear el proyecto en Supabase
 
 1. Entra a <https://supabase.com/dashboard> y crea un proyecto nuevo.
-2. Ve a **SQL Editor** y ejecuta, en orden, cada archivo de `supabase/migrations/` (`0001_init.sql`, `0002_catalogos.sql`, `0003_usuarios.sql`, `0004_estado_proyecto.sql`, `0005_equipo_asignado.sql`).
+2. Ve a **SQL Editor** y ejecuta, en orden, cada archivo de `supabase/migrations/` (`0001_init.sql`, `0002_catalogos.sql`, … hasta la última numerada).
 3. En **Authentication → URL Configuration** agrega:
    - Site URL: `http://localhost:3000` (y luego la URL de Vercel)
    - Redirect URLs: `http://localhost:3000/auth/callback` y `https://TU-APP.vercel.app/auth/callback`
@@ -46,7 +46,8 @@ A partir de ahí, ese usuario crea a los demás desde **Configuración → Usuar
 supabase/migrations/0001_init.sql   Esquema, RLS, folio automático, bucket de adjuntos
 supabase/migrations/0002_catalogos.sql  Catálogos empresas -> departamentos -> áreas
 supabase/migrations/0003_usuarios.sql   Cambio obligatorio de contraseña y desactivación de usuarios
-supabase/migrations/0004_estado_proyecto.sql  Estados del proyecto (No iniciado, Iniciado, En pruebas, Finalizado)
+supabase/migrations/0004_estado_proyecto.sql  Estados del proyecto (versión anterior, 4 estados)
+supabase/migrations/0011_estados_proyecto_v3.sql  Estados actuales (Pausado, Recurrente, No iniciado, En desarrollo, Casi terminado, En pruebas, Entregado)
 supabase/migrations/0005_equipo_asignado.sql  Equipo de Innovación asignado a cada requerimiento
 src/lib/formulario.ts               Definición del formulario (secciones, campos, opciones, validación)
 src/lib/catalogos.ts                Carga de catálogos como árbol
@@ -64,6 +65,6 @@ src/app/(app)/requerimientos        Lista, formulario nuevo y detalle
 | Rol           | Puede                                                              |
 |---------------|--------------------------------------------------------------------|
 | `solicitante` | Crear requerimientos, ver los suyos, adjuntar archivos             |
-| `innovacion`  | Ver todos, cambiar el estado del proyecto (No iniciado → Iniciado → En pruebas → Finalizado), asignar miembros del equipo, prioridad final, fecha estimada y notas, administrar catálogos y usuarios en Configuración |
+| `innovacion`  | Ver todos, cambiar el estado del proyecto (Pausado, Recurrente, No iniciado, En desarrollo, Casi terminado, En pruebas, Entregado), asignar miembros del equipo, prioridad final, fecha estimada y notas, administrar catálogos y usuarios en Configuración |
 
 Las reglas se aplican en la base de datos (Row Level Security), no solo en la interfaz.

@@ -319,12 +319,19 @@ export const SECCIONES: Seccion[] = [
 export const NOTA_FINAL =
   "La prioridad final, viabilidad técnica y fecha estimada de entrega serán definidas por el Departamento de Innovación después de evaluar impacto, urgencia, esfuerzo, riesgo y dependencias.";
 
-/** Estado del proyecto. Todo requerimiento nace en `no_iniciado`; solo Innovación lo cambia. */
+/**
+ * Estado del proyecto, en el orden en que se muestran las columnas del tablero.
+ * Todo requerimiento nace en `no_iniciado`; solo Innovación lo cambia. Debe coincidir
+ * con el enum `estado_proyecto` de la base (migración 0011).
+ */
 export const ESTADOS = {
+  pausado: "Pausado",
+  recurrente: "Recurrente",
   no_iniciado: "No iniciado",
-  iniciado: "Iniciado",
+  en_desarrollo: "En desarrollo",
+  casi_terminado: "Casi terminado",
   en_pruebas: "En pruebas",
-  finalizado: "Finalizado",
+  entregado: "Entregado",
 } as const;
 
 export type Estado = keyof typeof ESTADOS;

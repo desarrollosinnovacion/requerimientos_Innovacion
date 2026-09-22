@@ -66,7 +66,8 @@ export default async function Inicio() {
   const equipo = (equipoData ?? []) as MiembroEquipo[];
 
   const hoy = inicioDelDia(new Date());
-  const activos = filas.filter((r) => r.estado !== "finalizado");
+  // Activo = todo lo que aún no se entregó (incluye pausados y recurrentes).
+  const activos = filas.filter((r) => r.estado !== "entregado");
   const porEstado = contar(filas, (r) => r.estado);
   const porPrioridad = contar(activos, (r) => r.prioridad_final ?? r.prioridad_sugerida ?? SIN_DATO);
   const porArea = contar(activos, (r) => r.empresa_area ?? SIN_DATO);
@@ -130,7 +131,7 @@ export default async function Inicio() {
       </div>
 
       {/* Indicadores */}
-      <section aria-label="Indicadores" className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+      <section aria-label="Indicadores" className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 2xl:grid-cols-9">
         <Indicador etiqueta="Activos" valor={activos.length} href="/requerimientos" detalle={`${filas.length} en total`} />
         {ORDEN_ESTADOS.map((e) => (
           <Indicador key={e} etiqueta={ESTADOS[e]} valor={porEstado[e] ?? 0} href={`/requerimientos?estado=${e}`} color={COLOR_BARRA[e]} />
@@ -150,7 +151,7 @@ export default async function Inicio() {
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h2 id="avance" className="text-base font-medium text-slate-900">Avance por estado</h2>
             <p className="text-sm text-slate-500">
-              {filas.length === 0 ? "Sin requerimientos" : `${porcentaje(porEstado.finalizado ?? 0, filas.length)} % finalizados`}
+              {filas.length === 0 ? "Sin requerimientos" : `${porcentaje(porEstado.entregado ?? 0, filas.length)} % entregados`}
             </p>
           </div>
           <div className="mt-4">
@@ -190,7 +191,7 @@ export default async function Inicio() {
 
         <section className="card p-5" aria-labelledby="unidades">
           <h2 id="unidades" className="text-base font-medium text-slate-900">Proyectos por unidad de negocio</h2>
-          <p className="mt-1 text-sm text-slate-500">Total de requerimientos de cada unidad, activos y finalizados.</p>
+          <p className="mt-1 text-sm text-slate-500">Total de requerimientos de cada unidad, activos y entregados.</p>
           <div className="mt-4">
             <Dona
               segmentos={donaUnidades}

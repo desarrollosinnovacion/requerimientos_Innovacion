@@ -1,13 +1,17 @@
 import { ESTADOS, type Estado } from "@/lib/formulario";
 
-// Etiquetas dentro de la paleta SICSA: neutros para lo que no empezó, Verde
-// para lo que avanza, Cobre para señalar (pruebas, prioridades altas) y
-// Verde SICSA sólido con Hueso para lo terminado. Radio pequeño, como el resto del portal.
+// Etiquetas dentro de la paleta SICSA, en paralelo a src/lib/colores-estado.ts:
+// beige y neutros para lo que está fuera de flujo (pausado, recurrente, sin iniciar),
+// rampa de Verde para lo que avanza, Cobre para señalar (pruebas, prioridades altas)
+// y Verde SICSA sólido con Hueso para lo entregado. Radio pequeño, como el resto del portal.
 const COLOR_ESTADO: Record<Estado, string> = {
+  pausado: "bg-beige-100 text-slate-900",
+  recurrente: "bg-slate-700 text-slate-100",
   no_iniciado: "bg-slate-200 text-slate-800",
-  iniciado: "bg-brand-100 text-brand-800",
+  en_desarrollo: "bg-brand-100 text-brand-800",
+  casi_terminado: "bg-brand-300 text-brand-900",
   en_pruebas: "bg-cobre-100 text-cobre-800",
-  finalizado: "bg-brand-600 text-slate-100",
+  entregado: "bg-brand-600 text-slate-100",
 };
 
 // Prioridad como una sola rampa de Cobre: cuanto más urgente, más intenso.
