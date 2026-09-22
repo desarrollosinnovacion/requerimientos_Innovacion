@@ -35,6 +35,8 @@ const COLOR_EQUIPO = ["#175641", "#c4c0b7", "#0B2B21", "#86b09d", "#3f3d39"];
 const COLOR_SIN_ASIGNAR = "#A7663A";
 const COLOR_OTROS = "#9c9891";
 const MAX_MIEMBROS_DONA = 5;
+/** Estados con tarjeta propia en la fila de indicadores; el resto solo aparece en la dona. */
+const ESTADOS_INDICADOR: Estado[] = ["recurrente", "en_desarrollo", "en_pruebas", "entregado"];
 /** Etiqueta para agrupar registros sin prioridad o sin unidad. */
 const SIN_DATO = "Sin definir";
 
@@ -90,7 +92,6 @@ export default async function Inicio() {
     .filter((x): x is { fila: Fila; fecha: string } => x.fecha !== null)
     .map((x) => ({ ...x, dias: diasHasta(x.fecha, hoy) }))
     .sort((a, b) => a.dias - b.dias);
-  const atrasados = conCompromiso.filter((x) => x.dias < 0);
   const recientes = [...filas].sort((a, b) => b.actualizado_en.localeCompare(a.actualizado_en)).slice(0, 6);
 
   const cargaEquipo = equipo
@@ -131,18 +132,11 @@ export default async function Inicio() {
       </div>
 
       {/* Indicadores */}
-      <section aria-label="Indicadores" className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 2xl:grid-cols-9">
+      <section aria-label="Indicadores" className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         <Indicador etiqueta="Activos" valor={activos.length} href="/requerimientos" detalle={`${filas.length} en total`} />
-        {ORDEN_ESTADOS.map((e) => (
+        {ESTADOS_INDICADOR.map((e) => (
           <Indicador key={e} etiqueta={ESTADOS[e]} valor={porEstado[e] ?? 0} href={`/requerimientos?estado=${e}`} color={COLOR_BARRA[e]} />
         ))}
-        <Indicador
-          etiqueta="Atrasados"
-          valor={atrasados.length}
-          href="#atencion"
-          alerta={atrasados.length > 0}
-          detalle={esInnovacion ? `${sinAsignar.length} sin asignar` : undefined}
-        />
       </section>
 
       {/* Donas: avance por estado, carga del equipo (Innovación) y activos por prioridad */}
