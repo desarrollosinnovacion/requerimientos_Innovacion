@@ -46,7 +46,8 @@ export function Dona({ segmentos, centro, descripcion, tamano = 168, compacto = 
   const seleccionado = activo === null ? null : segmentos[activo];
 
   return (
-    <div className="flex flex-wrap items-center gap-x-6 gap-y-4">
+    // Compacta: dona centrada arriba y leyenda debajo a todo lo ancho. Normal: dona a la izquierda y leyenda al lado.
+    <div className={compacto ? "flex flex-col items-center gap-3" : "flex flex-wrap items-center gap-x-6 gap-y-4"}>
       <div className="relative shrink-0" style={{ width: tamano, height: tamano }}>
         <svg
           width={tamano}
@@ -99,7 +100,7 @@ export function Dona({ segmentos, centro, descripcion, tamano = 168, compacto = 
 
       {/* Leyenda con valores: hace de tabla de datos y da identidad sin depender del color. */}
       {/* Ancho mínimo de 11 rem: si no cabe junto a la dona, baja debajo en vez de recortar nombres. */}
-      <ul className={`min-w-0 flex-1 divide-y divide-slate-100 ${compacto ? "basis-36 text-xs" : "basis-44 text-sm"}`}>
+      <ul className={`min-w-0 divide-y divide-slate-100 ${compacto ? "w-full text-xs" : "flex-1 basis-44 text-sm"}`}>
         {segmentos.map((s, i) => (
           <li
             key={s.etiqueta}
