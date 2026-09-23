@@ -12,6 +12,8 @@ import {
 const SIN_DATO = "Sin definir";
 const SIN_UNIDAD = "Sin unidad";
 const ORDEN = Object.keys(ESTADOS_INCIDENCIA) as EstadoIncidencia[];
+/** Donas compactas: el panel va sobre la lista y no debe robarle espacio. */
+const TAMANO_DONA = 112;
 
 /**
  * Panel de métricas sobre la lista de incidencias. Todas las gráficas se calculan
@@ -46,7 +48,7 @@ export function MetricasIncidencias({ incidencias }: { incidencias: IncidenciaFi
   const resueltas = porEstado.resuelta ?? 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <section aria-label="Indicadores de incidencias" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Indicador etiqueta="Total" valor={total} href="/incidencias" detalle={total === 0 ? undefined : `${porcentaje(resueltas, total)} % resueltas`} />
         {ORDEN.map((e) => (
@@ -61,9 +63,11 @@ export function MetricasIncidencias({ incidencias }: { incidencias: IncidenciaFi
         ))}
       </section>
 
-      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <Tarjeta id="inc-estado" titulo="Por estado">
           <Dona
+            tamano={TAMANO_DONA}
+            compacto
             segmentos={donaEstados}
             centro={{ valor: total, etiqueta: "en total" }}
             descripcion={`Incidencias por estado: ${resumen(donaEstados)}.`}
@@ -71,6 +75,8 @@ export function MetricasIncidencias({ incidencias }: { incidencias: IncidenciaFi
         </Tarjeta>
         <Tarjeta id="inc-responsable" titulo="Por responsable">
           <Dona
+            tamano={TAMANO_DONA}
+            compacto
             segmentos={donaResponsable}
             centro={{ valor: total, etiqueta: "en total" }}
             descripcion={`Incidencias por responsable: ${resumen(donaResponsable)}.`}
@@ -78,6 +84,8 @@ export function MetricasIncidencias({ incidencias }: { incidencias: IncidenciaFi
         </Tarjeta>
         <Tarjeta id="inc-prioridad" titulo="Por prioridad">
           <Dona
+            tamano={TAMANO_DONA}
+            compacto
             segmentos={donaPrioridad}
             centro={{ valor: total, etiqueta: "en total" }}
             descripcion={`Incidencias por prioridad: ${resumen(donaPrioridad)}.`}
@@ -85,6 +93,8 @@ export function MetricasIncidencias({ incidencias }: { incidencias: IncidenciaFi
         </Tarjeta>
         <Tarjeta id="inc-unidad" titulo="Por unidad de negocio">
           <Dona
+            tamano={TAMANO_DONA}
+            compacto
             segmentos={donaUnidades}
             centro={{ valor: total, etiqueta: "en total" }}
             descripcion={`Incidencias por unidad de negocio: ${resumen(donaUnidades)}.`}
@@ -97,22 +107,24 @@ export function MetricasIncidencias({ incidencias }: { incidencias: IncidenciaFi
 
 function Tarjeta({ id, titulo, children }: { id: string; titulo: string; children: React.ReactNode }) {
   return (
-    <section className="card p-5" aria-labelledby={id}>
-      <h2 id={id} className="text-base font-medium text-slate-900">{titulo}</h2>
-      <div className="mt-4">{children}</div>
+    <section className="card p-4" aria-labelledby={id}>
+      <h2 id={id} className="text-sm font-medium text-slate-900">{titulo}</h2>
+      <div className="mt-3">{children}</div>
     </section>
   );
 }
 
 function Indicador({ etiqueta, valor, href, detalle, color, alerta }: { etiqueta: string; valor: number; href: string; detalle?: string; color?: string; alerta?: boolean }) {
   return (
-    <Link href={href} className={`card flex flex-col gap-1 p-4 transition hover:border-brand-300 hover:shadow-md ${alerta ? "border-cobre-200 bg-cobre-50" : ""}`}>
-      <span className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-slate-500">
-        {color && <span aria-hidden className="h-2 w-2 rounded-sm" style={{ background: color }} />}
-        {etiqueta}
+    <Link href={href} className={`card flex items-center justify-between gap-3 px-4 py-3 transition hover:border-brand-300 hover:shadow-md ${alerta ? "border-cobre-200 bg-cobre-50" : ""}`}>
+      <span className="flex min-w-0 flex-col gap-0.5">
+        <span className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-slate-500">
+          {color && <span aria-hidden className="h-2 w-2 rounded-sm" style={{ background: color }} />}
+          {etiqueta}
+        </span>
+        {detalle && <span className="text-xs text-slate-500">{detalle}</span>}
       </span>
-      <span className={`text-3xl font-semibold tabular-nums ${alerta ? "text-cobre-700" : "text-slate-900"}`}>{valor}</span>
-      {detalle && <span className="text-xs text-slate-500">{detalle}</span>}
+      <span className={`text-2xl font-semibold tabular-nums ${alerta ? "text-cobre-700" : "text-slate-900"}`}>{valor}</span>
     </Link>
   );
 }
