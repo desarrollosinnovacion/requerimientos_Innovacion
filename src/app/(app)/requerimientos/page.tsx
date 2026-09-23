@@ -1,49 +1,86 @@
 import Link from "next/link";
 import { requerirUsuario } from "@/lib/auth";
+import { SIN_ASIGNAR, SIN_PRIORIDAD, SIN_UNIDAD } from "@/lib/filtros";
 import { ESTADOS, PRIORIDADES, type Estado } from "@/lib/formulario";
 import { formatearFecha, tituloProyecto } from "@/lib/formato";
 import type { MiembroEquipo, RequerimientoResumen } from "@/lib/tipos";
 import { BadgeEstado, BadgePrioridad, CLASES_ESTADO, CLASES_PRIORIDAD } from "@/components/badges";
 import { AsignarEquipo } from "./asignar-equipo";
+import { FiltrosLista } from "./filtros-lista";
 import { SelectorRapido } from "./selector-rapido";
 import { cambiarPrioridad } from "./actions";
 import { cambiarEstado } from "../proyectos/actions";
 
 const OPCIONES_ESTADO = (Object.keys(ESTADOS) as Estado[]).map((e) => ({ valor: e, etiqueta: ESTADOS[e] }));
 
-type Fila = RequerimientoResumen & { asignados: string[] };
-type FilaCruda = RequerimientoResumen & { asignados: { perfil_id: string }[] | null };
+type Fila = RequerimientoResumen & { asignados: string[]; unidad: string };
+type FilaCruda = RequerimientoResumen & { asignados: { perfil_id: string }[] | null; empresa: { nombre: string } | null };
+
+const texto = (v: string | string[] | undefined) => (typeof v === "string" ? v.trim() : "");
 
 export default async function ListaRequerimientos(props: PageProps<"/requerimientos">) {
-  const { estado, q, eliminado } = await props.searchParams;
+  const sp = await props.searchParams;
+  const eliminado = sp.eliminado;
+  const valores = {
+    q: texto(sp.q),
+    unidad: texto(sp.unidad),
+    asignado: texto(sp.asignado),
+    prioridad: texto(sp.prioridad),
+    estado: texto(sp.estado) in ESTADOS ? texto(sp.estado) : "",
+  };
   const { supabase, perfil } = await requerirUsuario();
   const esInnovacion = perfil.rol === "innovacion";
 
+  // Estado y búsqueda se filtran en la base; unidad, asignado y prioridad se
+  // filtran aquí porque dependen de datos derivados (catálogo, equipo, prioridad efectiva).
   let consulta = supabase
     .from("requerimientos")
     .select(
-      "id, folio, estado, nombre_proyecto, tipo_requerimiento, prioridad_sugerida, prioridad_final, nombre_solicitante, empresa_area, creado_en, asignados:requerimiento_asignados(perfil_id)",
+      "id, folio, estado, nombre_proyecto, tipo_requerimiento, prioridad_sugerida, prioridad_final, nombre_solicitante, empresa_area, creado_en, empresa:empresas(nombre), asignados:requerimiento_asignados(perfil_id)",
     )
     .order("creado_en", { ascending: false });
 
-  if (typeof estado === "string" && estado in ESTADOS) {
-    consulta = consulta.eq("estado", estado);
+  if (valores.estado) {
+    consulta = consulta.eq("estado", valores.estado);
   }
-  if (typeof q === "string" && q.trim()) {
-    const t = `%${q.trim()}%`;
+  if (valores.q) {
+    const t = `%${valores.q}%`;
     consulta = consulta.or(
       `folio.ilike.${t},nombre_proyecto.ilike.${t},nombre_solicitante.ilike.${t},empresa_area.ilike.${t},tipo_requerimiento.ilike.${t}`,
     );
   }
 
-  const [{ data, error }, { data: equipoData }] = await Promise.all([
+  const [{ data, error }, { data: equipoData }, { data: empresasData }] = await Promise.all([
     consulta.returns<FilaCruda[]>(),
     esInnovacion
       ? supabase.from("perfiles").select("id, nombre").eq("rol", "innovacion").eq("activo", true).order("nombre")
       : Promise.resolve({ data: null }),
+    supabase.from("empresas").select("nombre").eq("activo", true).order("orden").order("nombre"),
   ]);
-  const filas: Fila[] = (data ?? []).map((r) => ({ ...r, asignados: (r.asignados ?? []).map((a) => a.perfil_id) }));
+  const todas: Fila[] = (data ?? []).map(({ empresa, ...r }) => ({
+    ...r,
+    asignados: (r.asignados ?? []).map((a) => a.perfil_id),
+    // Igual que el tablero: unidad del catálogo o, en registros antiguos, el primer tramo de "Empresa / Depto / Área".
+    unidad: empresa?.nombre ?? r.empresa_area?.split(" / ")[0] ?? SIN_UNIDAD,
+  }));
   const equipo = (equipoData ?? []) as MiembroEquipo[];
+
+  const filas = todas.filter((r) => {
+    const porUnidad = valores.unidad === "" || r.unidad === valores.unidad;
+    const porAsignado =
+      valores.asignado === "" ||
+      (valores.asignado === SIN_ASIGNAR ? r.asignados.length === 0 : r.asignados.includes(valores.asignado));
+    const efectiva = r.prioridad_final ?? r.prioridad_sugerida;
+    const porPrioridad =
+      valores.prioridad === "" || (valores.prioridad === SIN_PRIORIDAD ? efectiva === null : efectiva === valores.prioridad);
+    return porUnidad && porAsignado && porPrioridad;
+  });
+
+  // Opciones de unidad: catálogo activo más lo que aparezca en los registros (nombres antiguos o "Sin unidad").
+  const unidades = [...new Set([...(empresasData ?? []).map((e) => e.nombre as string), ...todas.map((r) => r.unidad)])].sort(
+    (a, b) => (a === SIN_UNIDAD ? 1 : b === SIN_UNIDAD ? -1 : a.localeCompare(b, "es")),
+  );
+  const hayFiltro = Object.values(valores).some((v) => v !== "");
 
   return (
     <div className="space-y-6">
@@ -69,28 +106,7 @@ export default async function ListaRequerimientos(props: PageProps<"/requerimien
         </p>
       )}
 
-      <form className="card flex flex-wrap items-end gap-3 p-4" method="get">
-        <div className="min-w-48 flex-1">
-          <label htmlFor="q" className="label text-xs">Buscar</label>
-          <input
-            id="q"
-            name="q"
-            defaultValue={typeof q === "string" ? q : ""}
-            placeholder="Folio, proyecto, solicitante, área o tipo"
-            className="input mt-1"
-          />
-        </div>
-        <div>
-          <label htmlFor="estado" className="label text-xs">Estado</label>
-          <select id="estado" name="estado" defaultValue={typeof estado === "string" ? estado : ""} className="input mt-1">
-            <option value="">Todos</option>
-            {(Object.keys(ESTADOS) as Estado[]).map((e) => (
-              <option key={e} value={e}>{ESTADOS[e]}</option>
-            ))}
-          </select>
-        </div>
-        <button type="submit" className="btn-secondary">Filtrar</button>
-      </form>
+      <FiltrosLista valores={valores} unidades={unidades} equipo={esInnovacion ? equipo : null} />
 
       {error && (
         <p role="alert" className="rounded-md bg-cobre-50 px-3 py-2 text-sm text-cobre-700">
@@ -100,13 +116,22 @@ export default async function ListaRequerimientos(props: PageProps<"/requerimien
 
       {filas.length === 0 ? (
         <div className="card p-12">
-          <p className="text-slate-700">No hay requerimientos que mostrar.</p>
-          <Link href="/requerimientos/nuevo" className="mt-4 inline-block text-sm font-medium text-brand-600 hover:underline">
-            Crear el primero
-          </Link>
+          <p className="text-slate-700">{hayFiltro ? "Ningún requerimiento coincide con estos filtros." : "No hay requerimientos que mostrar."}</p>
+          {hayFiltro ? (
+            <Link href="/requerimientos" className="mt-4 inline-block text-sm font-medium text-brand-600 hover:underline">
+              Quitar filtros
+            </Link>
+          ) : (
+            <Link href="/requerimientos/nuevo" className="mt-4 inline-block text-sm font-medium text-brand-600 hover:underline">
+              Crear el primero
+            </Link>
+          )}
         </div>
       ) : (
         <div className="card overflow-x-auto">
+          <p className="border-b border-slate-100 px-4 py-2 text-xs text-slate-500">
+            {hayFiltro ? `${filas.length} requerimiento${filas.length === 1 ? "" : "s"} con estos filtros` : `${filas.length} requerimiento${filas.length === 1 ? "" : "s"}`}
+          </p>
           <table className="min-w-full divide-y divide-slate-200 text-sm">
             <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
               <tr>
