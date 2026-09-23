@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requerirUsuario } from "@/lib/auth";
 import { SIN_ASIGNAR, SIN_PRIORIDAD } from "@/lib/filtros";
 import { PRIORIDADES } from "@/lib/formulario";
@@ -168,9 +169,11 @@ export default async function IncidenciasPage(props: PageProps<"/incidencias">) 
               <tbody className="divide-y divide-slate-100">
                 {filas.map((i) => (
                   <tr key={i.id} className="align-top hover:bg-slate-50">
-                    <td className="whitespace-nowrap px-4 py-3 font-mono text-xs font-medium text-slate-700">{i.folio}</td>
+                    <td className="whitespace-nowrap px-4 py-3 font-mono text-xs">
+                      <Link href={`/incidencias/${i.id}`} className="font-medium text-brand-600 hover:underline">{i.folio}</Link>
+                    </td>
                     <td className="max-w-md px-4 py-3">
-                      <p className="text-slate-800">{i.titulo}</p>
+                      <Link href={`/incidencias/${i.id}`} className="text-slate-800 hover:text-brand-700 hover:underline">{i.titulo}</Link>
                       {i.descripcion && (
                         <p className="mt-0.5 line-clamp-2 text-xs text-slate-500" title={i.descripcion}>{i.descripcion}</p>
                       )}

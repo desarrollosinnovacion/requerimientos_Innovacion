@@ -66,6 +66,7 @@ async function actualizar(id: string, cambios: Record<string, string | null>, me
     return { ok: false, error: `${mensaje}.` };
   }
   revalidatePath("/incidencias");
+  revalidatePath(`/incidencias/${id}`);
   return { ok: true };
 }
 
