@@ -6,7 +6,15 @@ import type { MiembroEquipo } from "@/lib/tipos";
 import { BadgeEstado, BadgePrioridad } from "@/components/badges";
 import { BotonLinkPublico } from "@/components/boton-link-publico";
 import { Dona, type SegmentoDona } from "@/components/dona";
-import { COLOR_ESTADO as COLOR_BARRA, ORDEN_ESTADOS } from "@/lib/colores-estado";
+import {
+  COLOR_ESTADO as COLOR_BARRA,
+  COLOR_CATEGORIA as COLOR_EQUIPO,
+  COLOR_OTROS,
+  COLOR_PRIORIDAD,
+  COLOR_SIN_ASIGNAR,
+  MAX_SEGMENTOS_DONA as MAX_MIEMBROS_DONA,
+  ORDEN_ESTADOS,
+} from "@/lib/colores-estado";
 
 type Fila = {
   id: string;
@@ -30,11 +38,6 @@ type Fila = {
 type FilaCruda = Omit<Fila, "asignados" | "empresa"> & { asignados: { perfil: unknown }[] | null; empresa: unknown };
 
 
-/** Orden fijo de colores categóricos (equipo y unidades de negocio): verde, piedra, verde profundo, verde claro, tinta. "Sin asignar" siempre en Cobre. */
-const COLOR_EQUIPO = ["#175641", "#c4c0b7", "#0B2B21", "#86b09d", "#3f3d39"];
-const COLOR_SIN_ASIGNAR = "#A7663A";
-const COLOR_OTROS = "#9c9891";
-const MAX_MIEMBROS_DONA = 5;
 /** Estados con tarjeta propia en la fila de indicadores; el resto solo aparece en la dona. */
 const ESTADOS_INDICADOR: Estado[] = ["recurrente", "en_desarrollo", "en_pruebas", "entregado"];
 /** Etiqueta para agrupar registros sin prioridad o sin unidad. */
@@ -290,14 +293,6 @@ export default async function Inicio() {
     </div>
   );
 }
-
-/** Prioridad es ordinal: rampa secuencial de Cobre (más urgente, más oscuro) y Baja en neutro. Validada para daltonismo. */
-const COLOR_PRIORIDAD: Record<string, string> = {
-  Crítica: "#744526",
-  Alta: "#c0835a",
-  Media: "#e6c8b0",
-  Baja: "#9c9891",
-};
 
 function Indicador({ etiqueta, valor, href, detalle, color, alerta }: { etiqueta: string; valor: number; href: string; detalle?: string; color?: string; alerta?: boolean }) {
   return (
