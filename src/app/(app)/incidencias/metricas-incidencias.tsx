@@ -62,28 +62,28 @@ export function MetricasIncidencias({ incidencias }: { incidencias: IncidenciaFi
       </section>
 
       <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-        <Tarjeta id="inc-estado" titulo="Por estado" detalle="Todas las incidencias registradas.">
+        <Tarjeta id="inc-estado" titulo="Por estado">
           <Dona
             segmentos={donaEstados}
             centro={{ valor: total, etiqueta: "en total" }}
             descripcion={`Incidencias por estado: ${resumen(donaEstados)}.`}
           />
         </Tarjeta>
-        <Tarjeta id="inc-responsable" titulo="Por responsable" detalle="Cuántas incidencias ha atendido o tiene cada persona.">
+        <Tarjeta id="inc-responsable" titulo="Por responsable">
           <Dona
             segmentos={donaResponsable}
             centro={{ valor: total, etiqueta: "en total" }}
             descripcion={`Incidencias por responsable: ${resumen(donaResponsable)}.`}
           />
         </Tarjeta>
-        <Tarjeta id="inc-prioridad" titulo="Por prioridad" detalle="Todas las incidencias según su prioridad.">
+        <Tarjeta id="inc-prioridad" titulo="Por prioridad">
           <Dona
             segmentos={donaPrioridad}
             centro={{ valor: total, etiqueta: "en total" }}
             descripcion={`Incidencias por prioridad: ${resumen(donaPrioridad)}.`}
           />
         </Tarjeta>
-        <Tarjeta id="inc-unidad" titulo="Por unidad de negocio" detalle="De dónde llegan las incidencias, pendientes y resueltas.">
+        <Tarjeta id="inc-unidad" titulo="Por unidad de negocio">
           <Dona
             segmentos={donaUnidades}
             centro={{ valor: total, etiqueta: "en total" }}
@@ -95,11 +95,10 @@ export function MetricasIncidencias({ incidencias }: { incidencias: IncidenciaFi
   );
 }
 
-function Tarjeta({ id, titulo, detalle, children }: { id: string; titulo: string; detalle: string; children: React.ReactNode }) {
+function Tarjeta({ id, titulo, children }: { id: string; titulo: string; children: React.ReactNode }) {
   return (
     <section className="card p-5" aria-labelledby={id}>
       <h2 id={id} className="text-base font-medium text-slate-900">{titulo}</h2>
-      <p className="mt-1 text-sm text-slate-500">{detalle}</p>
       <div className="mt-4">{children}</div>
     </section>
   );
