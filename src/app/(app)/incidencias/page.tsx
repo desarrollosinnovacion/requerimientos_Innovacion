@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { requerirUsuario } from "@/lib/auth";
+import { SIN_ASIGNAR, SIN_PRIORIDAD } from "@/lib/filtros";
 import { PRIORIDADES } from "@/lib/formulario";
 import { formatearFecha } from "@/lib/formato";
 import {
@@ -11,6 +11,7 @@ import {
 } from "@/lib/incidencias";
 import type { MiembroEquipo } from "@/lib/tipos";
 import { BadgePrioridad, CLASES_PRIORIDAD } from "@/components/badges";
+import { BarraFiltros, type CampoFiltro } from "@/components/barra-filtros";
 import { SelectorRapido } from "../requerimientos/selector-rapido";
 import { MetricasIncidencias } from "./metricas-incidencias";
 import { ModalIncidencia } from "./modal-incidencia";
@@ -23,14 +24,25 @@ const OPCIONES_ESTADO = (Object.keys(ESTADOS_INCIDENCIA) as EstadoIncidencia[]).
 
 // Responsable con aspecto neutro; "Sin asignar" se señala en Cobre como en los requerimientos.
 const CLASES_ASIGNADO: Record<string, string> = { "": "bg-cobre-100 text-cobre-800" };
+/** Valor del filtro de unidad para incidencias sin empresa. */
+const SIN_UNIDAD_ID = "sin_unidad";
+
+const texto = (v: string | string[] | undefined) => (typeof v === "string" ? v.trim() : "");
 
 export default async function IncidenciasPage(props: PageProps<"/incidencias">) {
-  const { estado } = await props.searchParams;
-  const filtroEstado = esEstadoIncidencia(estado) ? estado : null;
+  const sp = await props.searchParams;
+  const valores = {
+    q: texto(sp.q),
+    unidad: texto(sp.unidad),
+    asignado: texto(sp.asignado),
+    prioridad: texto(sp.prioridad),
+    estado: esEstadoIncidencia(texto(sp.estado)) ? texto(sp.estado) : "",
+  };
+  const filtroEstado = valores.estado as EstadoIncidencia | "";
   const { supabase, perfil } = await requerirUsuario();
   const esInnovacion = perfil.rol === "innovacion";
 
-  // Se traen todas: las métricas se calculan sobre el total y la pestaña filtra en memoria.
+  // Se traen todas y se filtra en memoria: los filtros dependen de datos derivados y el volumen es pequeño.
   const consulta = supabase
     .from("incidencias")
     .select("*, empresa:empresas(nombre), asignado:perfiles!incidencias_asignado_id_fkey(id, nombre)")
@@ -44,13 +56,58 @@ export default async function IncidenciasPage(props: PageProps<"/incidencias">) 
       : Promise.resolve({ data: null }),
   ]);
   const todas = data ?? [];
-  const filas = filtroEstado ? todas.filter((i) => i.estado === filtroEstado) : todas;
   const empresas = (empresasData ?? []) as { id: string; nombre: string }[];
   const equipo = (equipoData ?? []) as MiembroEquipo[];
 
-  const pestanas: { valor: EstadoIncidencia | null; etiqueta: string }[] = [
-    { valor: null, etiqueta: "Todas" },
-    ...OPCIONES_ESTADO.map((o) => ({ valor: o.valor, etiqueta: o.etiqueta })),
+  // Todo menos el estado: alimenta los indicadores, que sirven para cambiar de estado.
+  const q = valores.q.toLocaleLowerCase("es");
+  const sinEstado = todas.filter((i) => {
+    const porTexto =
+      q === "" ||
+      [i.folio, i.titulo, i.descripcion, i.reportado_por, i.empresa?.nombre].some((t) => t?.toLocaleLowerCase("es").includes(q));
+    const porUnidad =
+      valores.unidad === "" || (valores.unidad === SIN_UNIDAD_ID ? i.empresa_id === null : i.empresa_id === valores.unidad);
+    const porAsignado =
+      valores.asignado === "" || (valores.asignado === SIN_ASIGNAR ? i.asignado === null : i.asignado?.id === valores.asignado);
+    const porPrioridad =
+      valores.prioridad === "" || (valores.prioridad === SIN_PRIORIDAD ? i.prioridad === null : i.prioridad === valores.prioridad);
+    return porTexto && porUnidad && porAsignado && porPrioridad;
+  });
+  const filas = filtroEstado ? sinEstado.filter((i) => i.estado === filtroEstado) : sinEstado;
+  const hayFiltro = Object.values(valores).some((v) => v !== "");
+
+  // Los indicadores conservan el resto de los filtros y solo cambian el estado.
+  const hrefEstado = (estado: EstadoIncidencia | "") => {
+    const params = new URLSearchParams();
+    for (const [k, v] of Object.entries({ ...valores, estado })) if (v) params.set(k, v);
+    const qs = params.toString();
+    return qs ? `/incidencias?${qs}` : "/incidencias";
+  };
+
+  const camposFiltro: CampoFiltro[] = [
+    {
+      name: "unidad",
+      etiqueta: "Unidad de negocio",
+      valor: valores.unidad,
+      todos: "Todas",
+      opciones: [...empresas.map((e) => ({ valor: e.id, etiqueta: e.nombre })), { valor: SIN_UNIDAD_ID, etiqueta: "Sin unidad" }],
+    },
+    ...(esInnovacion
+      ? [{
+          name: "asignado",
+          etiqueta: "Responsable",
+          valor: valores.asignado,
+          opciones: [{ valor: SIN_ASIGNAR, etiqueta: "Sin asignar" }, ...equipo.map((m) => ({ valor: m.id, etiqueta: m.nombre }))],
+        }]
+      : []),
+    {
+      name: "prioridad",
+      etiqueta: "Prioridad",
+      valor: valores.prioridad,
+      todos: "Todas",
+      opciones: [...PRIORIDADES.map((p) => ({ valor: p, etiqueta: p })), { valor: SIN_PRIORIDAD, etiqueta: "Sin definir" }],
+    },
+    { name: "estado", etiqueta: "Estado", valor: valores.estado, opciones: OPCIONES_ESTADO },
   ];
 
   return (
@@ -73,31 +130,25 @@ export default async function IncidenciasPage(props: PageProps<"/incidencias">) 
         </p>
       )}
 
-      {!error && <MetricasIncidencias incidencias={todas} />}
+      <BarraFiltros
+        campos={camposFiltro}
+        busqueda={{ valor: valores.q, placeholder: "Folio, título, descripción o quién reporta" }}
+        hrefLimpiar="/incidencias"
+      />
+
+      {!error && <MetricasIncidencias incidencias={filas} paraIndicadores={sinEstado} hrefEstado={hrefEstado} estadoActivo={filtroEstado} />}
 
       <div className="card">
-        <nav aria-label="Filtrar por estado" className="flex flex-wrap gap-1 border-b border-slate-200 px-3 pt-3">
-          {pestanas.map((p) => {
-            const activa = p.valor === filtroEstado;
-            return (
-              <Link
-                key={p.etiqueta}
-                href={p.valor ? `/incidencias?estado=${p.valor}` : "/incidencias"}
-                aria-current={activa ? "page" : undefined}
-                className={`-mb-px border-b-2 px-3 py-2 text-sm font-medium ${
-                  activa ? "border-brand-600 text-brand-800" : "border-transparent text-slate-500 hover:text-slate-900"
-                }`}
-              >
-                {p.etiqueta}
-              </Link>
-            );
-          })}
-        </nav>
+        <p className="border-b border-slate-100 px-4 py-2 text-xs text-slate-500">
+          {hayFiltro
+            ? `${filas.length} incidencia${filas.length === 1 ? "" : "s"} con estos filtros`
+            : `${filas.length} incidencia${filas.length === 1 ? "" : "s"}`}
+        </p>
 
         {filas.length === 0 ? (
           <p className="p-10 text-sm text-slate-600">
-            {filtroEstado
-              ? `No hay incidencias en "${ESTADOS_INCIDENCIA[filtroEstado]}".`
+            {hayFiltro
+              ? "Ninguna incidencia coincide con estos filtros."
               : "Aún no hay incidencias registradas. Usa el botón «Registrar incidencia» para crear la primera."}
           </p>
         ) : (

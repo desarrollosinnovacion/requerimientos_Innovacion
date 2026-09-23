@@ -15,13 +15,24 @@ const ORDEN = Object.keys(ESTADOS_INCIDENCIA) as EstadoIncidencia[];
 /** Donas compactas: el panel va sobre la lista y no debe robarle espacio. */
 const TAMANO_DONA = 112;
 
+type Props = {
+  /** Incidencias que pasan todos los filtros: alimentan las donas. */
+  incidencias: IncidenciaFila[];
+  /** Incidencias que pasan todos los filtros menos el de estado: alimentan los indicadores. */
+  paraIndicadores: IncidenciaFila[];
+  /** Enlace que conserva los demás filtros y fija (o quita) el estado. */
+  hrefEstado: (estado: EstadoIncidencia | "") => string;
+  estadoActivo: EstadoIncidencia | "";
+};
+
 /**
- * Panel de métricas sobre la lista de incidencias. Todas las gráficas se calculan
- * sobre el total de incidencias visibles para el usuario, sin importar la pestaña
- * activa; los indicadores de arriba ya separan por estado.
+ * Panel de métricas sobre la lista de incidencias. Sigue los filtros activos:
+ * las donas se calculan sobre lo filtrado y los indicadores de estado sirven
+ * para cambiar de estado sin perder los demás filtros.
  */
-export function MetricasIncidencias({ incidencias }: { incidencias: IncidenciaFila[] }) {
+export function MetricasIncidencias({ incidencias, paraIndicadores, hrefEstado, estadoActivo }: Props) {
   const porEstado = contar(incidencias, (i) => i.estado);
+  const indicadores = contar(paraIndicadores, (i) => i.estado);
 
   const donaEstados: SegmentoDona[] = ORDEN.map((e) => ({
     etiqueta: ESTADOS_INCIDENCIA[e],
@@ -45,20 +56,28 @@ export function MetricasIncidencias({ incidencias }: { incidencias: IncidenciaFi
   const donaUnidades = agrupar(incidencias, (i) => i.empresa?.nombre ?? SIN_UNIDAD, "Otras");
 
   const total = incidencias.length;
-  const resueltas = porEstado.resuelta ?? 0;
+  const totalIndicadores = paraIndicadores.length;
+  const resueltas = indicadores.resuelta ?? 0;
 
   return (
     <div className="space-y-3">
       <section aria-label="Indicadores de incidencias" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Indicador etiqueta="Total" valor={total} href="/incidencias" detalle={total === 0 ? undefined : `${porcentaje(resueltas, total)} % resueltas`} />
+        <Indicador
+          etiqueta="Total"
+          valor={totalIndicadores}
+          href={hrefEstado("")}
+          activo={estadoActivo === ""}
+          detalle={totalIndicadores === 0 ? undefined : `${porcentaje(resueltas, totalIndicadores)} % resueltas`}
+        />
         {ORDEN.map((e) => (
           <Indicador
             key={e}
             etiqueta={e === "abierta" ? "Abiertas" : e === "en_proceso" ? "En proceso" : "Resueltas"}
-            valor={porEstado[e] ?? 0}
-            href={`/incidencias?estado=${e}`}
+            valor={indicadores[e] ?? 0}
+            href={hrefEstado(e)}
+            activo={estadoActivo === e}
             color={COLOR_ESTADO_INCIDENCIA[e]}
-            alerta={e === "abierta" && (porEstado[e] ?? 0) > 0}
+            alerta={e === "abierta" && (indicadores[e] ?? 0) > 0}
           />
         ))}
       </section>
@@ -114,9 +133,18 @@ function Tarjeta({ id, titulo, children }: { id: string; titulo: string; childre
   );
 }
 
-function Indicador({ etiqueta, valor, href, detalle, color, alerta }: { etiqueta: string; valor: number; href: string; detalle?: string; color?: string; alerta?: boolean }) {
+type PropsIndicador = { etiqueta: string; valor: number; href: string; activo: boolean; detalle?: string; color?: string; alerta?: boolean };
+
+/** Tarjeta-enlace de estado; la activa lleva borde verde para indicar el filtro vigente. */
+function Indicador({ etiqueta, valor, href, activo, detalle, color, alerta }: PropsIndicador) {
   return (
-    <Link href={href} className={`card flex items-center justify-between gap-3 px-4 py-3 transition hover:border-brand-300 hover:shadow-md ${alerta ? "border-cobre-200 bg-cobre-50" : ""}`}>
+    <Link
+      href={href}
+      aria-current={activo ? "page" : undefined}
+      className={`card flex items-center justify-between gap-3 px-4 py-3 transition hover:border-brand-300 hover:shadow-md ${
+        alerta ? "border-cobre-200 bg-cobre-50" : ""
+      } ${activo ? "border-brand-600 ring-1 ring-brand-600" : ""}`}
+    >
       <span className="flex min-w-0 flex-col gap-0.5">
         <span className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-slate-500">
           {color && <span aria-hidden className="h-2 w-2 rounded-sm" style={{ background: color }} />}
