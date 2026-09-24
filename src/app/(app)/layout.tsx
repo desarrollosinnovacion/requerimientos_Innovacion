@@ -13,7 +13,12 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
     { href: "/requerimientos", etiqueta: "Requerimientos", icono: "lista" },
     { href: "/proyectos", etiqueta: "Proyectos", icono: "tablero" },
     { href: "/incidencias", etiqueta: "Incidencias", icono: "incidencias" },
-    ...(esInnovacion ? [{ href: "/configuracion", etiqueta: "Configuración", icono: "engrane" as const }] : []),
+    ...(esInnovacion
+      ? [
+          { href: "/indicadores", etiqueta: "Indicadores FDC", icono: "indicadores" as const },
+          { href: "/configuracion", etiqueta: "Configuración", icono: "engrane" as const },
+        ]
+      : []),
   ];
 
   return (

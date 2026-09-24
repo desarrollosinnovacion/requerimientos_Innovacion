@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, ClipboardList, SquareKanban, LifeBuoy, Settings } from "lucide-react";
+import { LayoutDashboard, ClipboardList, SquareKanban, LifeBuoy, Gauge, Settings } from "lucide-react";
 
-export type NombreIcono = "inicio" | "lista" | "tablero" | "incidencias" | "engrane";
+export type NombreIcono = "inicio" | "lista" | "tablero" | "incidencias" | "indicadores" | "engrane";
 type Enlace = { href: string; etiqueta: string; icono: NombreIcono };
 
 // Set único de iconos: Lucide, trazo 1.5 (manual, p. 08).
-const ICONOS = { inicio: LayoutDashboard, lista: ClipboardList, tablero: SquareKanban, incidencias: LifeBuoy, engrane: Settings } as const;
+const ICONOS = { inicio: LayoutDashboard, lista: ClipboardList, tablero: SquareKanban, incidencias: LifeBuoy, indicadores: Gauge, engrane: Settings } as const;
 
 /**
  * Enlaces de la barra lateral: solo icono en pantallas pequeñas, icono + texto en grandes.
