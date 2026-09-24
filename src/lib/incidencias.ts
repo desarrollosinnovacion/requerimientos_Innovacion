@@ -44,8 +44,13 @@ export type Incidencia = {
   actualizado_en: string;
 };
 
-/** Fila de la lista: incidencia con la unidad de negocio y el responsable ya resueltos. */
+/** Fila de la lista y del detalle: incidencia con unidad, responsable y quien la registró ya resueltos. */
 export type IncidenciaFila = Incidencia & {
   empresa: { nombre: string } | null;
   asignado: MiembroEquipo | null;
+  creador: { nombre: string } | null;
 };
+
+/** Selección con los embeds que necesitan lista y detalle (los hints distinguen las dos FKs a perfiles). */
+export const SELECT_INCIDENCIA =
+  "*, empresa:empresas(nombre), asignado:perfiles!incidencias_asignado_id_fkey(id, nombre), creador:perfiles!incidencias_creado_por_fkey(nombre)";
