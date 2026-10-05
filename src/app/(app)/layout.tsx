@@ -16,6 +16,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
     ...(esInnovacion
       ? [
           { href: "/indicadores", etiqueta: "Indicadores FDC", icono: "indicadores" as const },
+          { href: "/credenciales", etiqueta: "Credenciales", icono: "llave" as const },
           { href: "/configuracion", etiqueta: "Configuración", icono: "engrane" as const },
         ]
       : []),
