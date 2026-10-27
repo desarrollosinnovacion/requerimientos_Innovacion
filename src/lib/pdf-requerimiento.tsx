@@ -176,6 +176,13 @@ type Props = {
   generadoEn: string;
 };
 
+/** Un campo es "corto" si su respuesta cabe con holgura en unas pocas líneas (se mantiene en una sola página). */
+function esCorto(campo: Campo, req: Requerimiento) {
+  const v = req[campo.nombre];
+  const largo = Array.isArray(v) ? v.join(" ").length : String(v ?? "").length;
+  return largo <= 400 && !String(v ?? "").includes("\n\n");
+}
+
 function tieneValor(v: unknown) {
   return Array.isArray(v)
     ? v.length > 0
@@ -339,11 +346,13 @@ function DocumentoRequerimiento({ req, asignados, logo, generadoEn }: Props) {
             if (campos.length === 0) return null;
             return (
               <View key={seccion.id} style={estilos.seccion}>
-                {/* El título va en el mismo bloque indivisible que su primer campo: así nunca queda huérfano al pie. */}
+                {/* El título va en el mismo bloque que su primer campo: así nunca queda huérfano al pie.
+                    Solo los campos cortos son indivisibles; un texto largo que no cabe en la página
+                    debe partirse, porque con wrap={false} react-pdf lo encima sobre lo demás. */}
                 {campos.map((c, i) => (
-                  <View key={c.nombre} wrap={false}>
+                  <View key={c.nombre} wrap={!esCorto(c, req)}>
                     {i === 0 && (
-                      <Text style={estilos.seccionTitulo}>
+                      <Text style={estilos.seccionTitulo} minPresenceAhead={40}>
                         {seccion.titulo}
                       </Text>
                     )}
