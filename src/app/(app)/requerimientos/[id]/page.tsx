@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, Pencil } from "lucide-react";
+import { ArrowLeft, FileDown, Pencil } from "lucide-react";
 import { notFound } from "next/navigation";
 import { requerirUsuario } from "@/lib/auth";
 import { SECCIONES, cumpleCondicion, type Campo } from "@/lib/formulario";
@@ -69,6 +69,10 @@ export default async function DetalleRequerimiento(props: PageProps<"/requerimie
           </p>
         </div>
         <div className="flex flex-wrap items-start justify-end gap-2">
+          <a href={`/requerimientos/${req.id}/pdf`} download={`${req.folio}.pdf`} className="btn-secondary">
+            <FileDown aria-hidden className="h-4 w-4" strokeWidth={1.5} />
+            Generar PDF
+          </a>
           {puedeEditar && (
             <Link href={`/requerimientos/${req.id}/editar`} className="btn-secondary">
               <Pencil aria-hidden className="h-4 w-4" strokeWidth={1.5} />
